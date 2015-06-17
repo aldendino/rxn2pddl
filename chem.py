@@ -8,7 +8,7 @@ class Atom:
 
     def __init__(self, symbol, x, y, z, rxnIndex, rxnAAM, attribs={}, aam=0):
         self.symbol = symbol
-        self.aam = aam # This a working, sanitized AAM, doesn't have to be the same as rxnAAM
+        self.aam = aam  # This a working, sanitized AAM, doesn't have to be the same as rxnAAM
         self.x = x
         self.y = y
         self.z = z
@@ -19,7 +19,8 @@ class Atom:
         self.charge = 0
 
     def __str__(self):
-        return "<Atom " + self.symbol + " at (" + ", ".join([str(self.x), str(self.y), str(self.z)]) + ") with AAM=" + str(self.aam) + " (old rxn " + str(self.rxnAAM) + ") and attribs " + str(self.attribs) + " />"
+        return "<Atom " + self.symbol + " at (" + ", ".join([str(self.x), str(self.y), str(self.z)]) + ") with AAM=" + \
+               str(self.aam) + " (old rxn " + str(self.rxnAAM) + ") and attribs " + str(self.attribs) + " />"
 
     def __eq__(self, other):
         return type(self) == type(other) and self.symbol == other.symbol and self.aam == other.aam
@@ -37,14 +38,17 @@ class Bond:
         self.attribs = attribs
 
     def __str__(self):
-        return "<Bond with order " + str(self.order) + " between AAM " + str(self.fromAtom.aam) + " and " + str(self.toAtom.aam) + " />"
+        return "<Bond with order " + str(self.order) + " between AAM " \
+               + str(self.fromAtom.aam) + " and " + str(self.toAtom.aam) + " />"
 
     def __eq__(self, other):
         #print "(comparing bonds)"
         #print "  self: " + str(self)
         #print "  other: " + str(other)
         
-        return type(self) == type(other) and self.order == other.order and ((self.fromAtom == other.fromAtom and self.toAtom == other.toAtom) or (self.fromAtom == other.toAtom and self.toAtom == other.fromAtom))
+        return type(self) == type(other) and self.order == other.order \
+               and ((self.fromAtom == other.fromAtom and self.toAtom == other.toAtom)
+                    or (self.fromAtom == other.toAtom and self.toAtom == other.fromAtom))
 
 
 class Molecule:
@@ -91,6 +95,7 @@ class Molecule:
             if b.fromAtom not in self.atomList:
                 self.atomList.append(b.fromAtom)
                 #print "Adding atom with aam " + str(b.fromAtom.aam)
+
     def isDiatomicHalogen(self):
         if (len(self.bondList) == 1 and len(self.atomList) == 2 and 
                 self.atomList[0].symbol == "X" and self.atomList[1].symbol == "X"):
@@ -124,10 +129,7 @@ class Molecule:
         self.atomList = filter(lambda a: a is not oldatom, self.atomList)
         self.atomList.extend(newmolecule.atomList)  # Is extend shallow or deep? Assume shallow.
         self.bondList.extend(newmolecule.bondList)
-
-
         # FINISHED, UNTESTED
-
 
     def getInstance(self, rgroups={}):
         """ This returns a new molecule which is the same as self except that every
@@ -157,7 +159,7 @@ class Molecule:
 class Reaction:
     """stores a set of reactants, agents, products, and rgroups
 
-    rgroups is a dictionary "R1" : [R-molecule, R-molecule, ...]
+    rgroups is a dictionary "R1": [R-molecule, R-molecule, ...]
     """
 
     def __init__(self, name="unknown_reaction", full_name="Unknown Reaction", desc="No description"):
@@ -170,23 +172,22 @@ class Reaction:
         self.products = []
         self.rgroups = {}
 
-
     def __str__(self):
         desc = "<Reaction>"
         desc += "\n  <Reactants>"
         for r in self.reactants:
-            desc += "\n    " + ('\n    ').join(str(r).split('\n'))
+            desc += "\n    " + '\n    '.join(str(r).split('\n'))
         desc += "\n  </Reactants>\n  <Agents>"
         for a in self.agents:
-            desc += "\n    " + ('\n    ').join(str(a).split('\n'))
+            desc += "\n    " + '\n    '.join(str(a).split('\n'))
         desc += "\n  </Agents>\n  <Products>"
         for p in self.products:
-            desc += "\n    " + ('\n    ').join(str(p).split('\n'))
+            desc += "\n    " + '\n    '.join(str(p).split('\n'))
         desc += "\n  </Products>\n  <R-groups>"
         for g in self.rgroups.keys():
             desc += "\n    <R-group No. " + g + ">"
             for g2 in self.rgroups[g]:
-                desc += "\n      " + ('\n      ').join(str(g2).split('\n'))
+                desc += "\n      " + '\n      '.join(str(g2).split('\n'))
             desc += "\n    </R-group No. " + g + ">"
         desc += "\n  </R-groups>\n<Reaction>"
 
@@ -241,7 +242,8 @@ class Reaction:
                 if atom.aam == 0:
                     raise Exception("Sanity check: reaction contains a reactant atom with AAM = 0")
                 if atom.aam in aamReactants:
-                    raise Exception("Sanity check: reaction contains two reactant atoms with the same AAM, #" + str(atom.aam) + ";\n current atom: " + str(atom))
+                    raise Exception("Sanity check: reaction contains two reactant atoms with the same AAM, #"
+                                    + str(atom.aam) + ";\n current atom: " + str(atom))
                 else:
                     aamReactants.append(atom.aam)
 
@@ -250,7 +252,8 @@ class Reaction:
                 if atom.aam == 0:
                     raise Exception("Sanity check: reaction contains a catalyst atom with AAM = 0")
                 if atom.aam in aamAgents:
-                    raise Exception("Sanity check: reaction contains two catalyst atoms with the same AAM, #" + str(atom.aam) + ";\n current atom: " + str(atom))
+                    raise Exception("Sanity check: reaction contains two catalyst atoms with the same AAM, #"
+                                    + str(atom.aam) + ";\n current atom: " + str(atom))
                 else:
                     aamAgents.append(atom.aam)
 
@@ -259,7 +262,8 @@ class Reaction:
                 if atom.aam == 0:
                     raise Exception("Sanity check: reaction contains a product atom with AAM = 0")
                 if atom.aam in aamProducts:
-                    raise Exception("Sanity check: reaction contains two product atoms with the same AAM, #" + str(atom.aam) + ";\n current atom: " + str(atom))
+                    raise Exception("Sanity check: reaction contains two product atoms with the same AAM, #"
+                                    + str(atom.aam) + ";\n current atom: " + str(atom))
                 else:
                     aamProducts.append(atom.aam)
 
@@ -373,14 +377,14 @@ def buildAlkyl(anchorAAM, args):
     return molecule
 
 
-def buildAlkylTree(molecule, anchor, size) :
-    if size < 1 :
+def buildAlkylTree(molecule, anchor, size):
+    if size < 1:
         atom = Atom("H", 0, 0, 0, 0, 0)
 
         molecule.addAtom(atom)
         if anchor is not None:
             molecule.addBond(Bond(0, 1, anchor, atom))
-    else : # assume size is non-negative
+    else: # assume size is non-negative
         # create new carbon
         atom = Atom("C", 0, 0, 0, 0, 0)
 
@@ -438,7 +442,7 @@ def buildTosylate(anchorAAM, args):
     root.aam = anchorAAM
     molecule.addAtom(root)
     molecule.anchor = root
-    oxygen = Atom("O", 0, 0, 0, 0, 0, {"CHG" : "-1"})
+    oxygen = Atom("O", 0, 0, 0, 0, 0, {"CHG": "-1"})
     molecule.addAtom(oxygen)
     molecule.addBond(Bond(0, 1, root, oxygen))
 
@@ -447,7 +451,7 @@ def buildTosylate(anchorAAM, args):
 
 def buildBromineAnion(anchorAAM, args):
     molecule = Molecule()
-    root = Atom("Br", 0, 0, 0, 0, 0, {"CHG" : "-1"})
+    root = Atom("Br", 0, 0, 0, 0, 0, {"CHG": "-1"})
     root.aam = anchorAAM
     molecule.addAtom(root)
     molecule.anchor = root
@@ -456,7 +460,7 @@ def buildBromineAnion(anchorAAM, args):
 
 def buildIodineAnion(anchorAAM, args):
     molecule = Molecule()
-    root = Atom("I", 0, 0, 0, 0, 0, {"CHG" : "-1"})
+    root = Atom("I", 0, 0, 0, 0, 0, {"CHG": "-1"})
     root.aam = anchorAAM
     molecule.addAtom(root)
     molecule.anchor = root
@@ -520,100 +524,100 @@ def buildAlkaliMetal(anchorAAM, args):
 
 
 PSEUDO = {
-        "alkyl" : (
-                buildAlkyl,     # function that builds it
-                { "size" : [1, 2, 3, 100] }     # arguments the function takes
-            ), 
-        "halogen" : (buildHalogen, {}), 
-        "alkalimetal" : (buildAlkaliMetal, {}),
-        "methyl" : (buildAlkyl, { "size" : [1] }),
-        "lindlarscatalyst" : (buildLindlarsCatalyst, {}),
-        "tso-" : (buildTosylate, {}),
-        "nh3" : (buildAmmonia, {}),
-        "i-" : (buildIodineAnion, {}),
-        "h2o" : (buildWater, {}),
-        "roh" : (buildROH, {}),
-        "br-" : (buildBromineAnion, {}),
-        "x" : (buildHalogen, { "symbol" : ["F", "Cl", "Br", "I"] }),
-    }
+    "alkyl": (
+        buildAlkyl, # function that builds it
+        {"size": [1, 2, 3, 100]} # arguments the function takes
+    ),
+    "halogen": (buildHalogen, {}),
+    "alkalimetal": (buildAlkaliMetal, {}),
+    "methyl": (buildAlkyl, {"size": [1]}),
+    "lindlarscatalyst": (buildLindlarsCatalyst, {}),
+    "tso-": (buildTosylate, {}),
+    "nh3": (buildAmmonia, {}),
+    "i-": (buildIodineAnion, {}),
+    "h2o": (buildWater, {}),
+    "roh": (buildROH, {}),
+    "br-": (buildBromineAnion, {}),
+    "x": (buildHalogen, {"symbol": ["F", "Cl", "Br", "I"]}),
+}
 
 ATOM_NAMES = {
-        "H" : "hydrogen",
-        "He" : "helium",
-        "Li" : "lithium",
-        "Be" : "beryllium",
-        "B" : "boron",
-        "C" : "carbon",
-        "N" : "nitrogen",   
-        "O" : "oxygen",
-        "F" : "fluorine",
-        "Ne" : "neon",
-        "Na" : "sodium",
-        "Mg" : "magnesium",
-        "Al" : "aluminium",
-        "Si" : "silicon",
-        "P" : "phosphorus",
-        "S" : "sulfur", # versus sulphur?
-        "Cl" : "chlorine",
-        "Ar" : "argon",
-        "K" : "potassium",
-        "Ca" : "calcium",
-        "Sc" : "scandium",
-        "Ti" : "titanium",
-        "V" : "vanadium",
-        "Cr" : "chromium",
-        "Mn" : "manganese",
-        "Fe" : "iron",
-        "Co" : "cobalt",
-        "Ni" : "nickel",
-        "Cu" : "copper",
-        "Zn" : "zink",
-        "Ga" : "gallium",
-        "Ge" : "germanium",
-        "As" : "arsenic",
-        "Se" : "selenium",
-        "Br" : "bromine",
-        "Kr" : "krypton",
-        "Rb" : "rubidium",
-        "Sr" : "strontium",
-        "Y" : "yttrium",
-        "Zr" : "zirconium",
-        "Nb" : "niobium",
-        "Mo" : "molybdenum",
-        "Tc" : "technetium",
-        "Ru" : "ruthenium",
-        "Rh" : "rhodium",
-        "Pd" : "palladium",
-        "Ag" : "silver",
-        "Cd" : "cadmium",
-        "In" : "indium",
-        "Sn" : "tin",
-        "Sb" : "antimony",
-        "Te" : "tellurium",
-        "I" : "iodine",
-        "Xe" : "xenon",
-        "Cs" : "caesium",
-        "Ba" : "barium",
-        # Omitting lanthanoids (57-71)
-        "Hf" : "hafnium",
-        "Ta" : "tantalum",
-        "W" : "tungsten",
-        "Re" : "rhenium",
-        "Os" : "osmium",
-        "Ir" : "iridium",
-        "Pt" : "platinum",
-        "Au" : "gold",
-        "Hg" : "mercury",
-        "Tl" : "thallium",
-        "Pb" : "lead",
-        "Bi" : "bismuth",
-        "Po" : "polonium",
-        "At" : "astatine",
-        "Rn" : "radon",
-        "Fr" : "francium",
-        "Ra" : "radium"
-        # Omitting 89-118+
-    }
+    "H": "hydrogen",
+    "He": "helium",
+    "Li": "lithium",
+    "Be": "beryllium",
+    "B": "boron",
+    "C": "carbon",
+    "N": "nitrogen",
+    "O": "oxygen",
+    "F": "fluorine",
+    "Ne": "neon",
+    "Na": "sodium",
+    "Mg": "magnesium",
+    "Al": "aluminium",
+    "Si": "silicon",
+    "P": "phosphorus",
+    "S": "sulfur", # versus sulphur?
+    "Cl": "chlorine",
+    "Ar": "argon",
+    "K": "potassium",
+    "Ca": "calcium",
+    "Sc": "scandium",
+    "Ti": "titanium",
+    "V": "vanadium",
+    "Cr": "chromium",
+    "Mn": "manganese",
+    "Fe": "iron",
+    "Co": "cobalt",
+    "Ni": "nickel",
+    "Cu": "copper",
+    "Zn": "zink",
+    "Ga": "gallium",
+    "Ge": "germanium",
+    "As": "arsenic",
+    "Se": "selenium",
+    "Br": "bromine",
+    "Kr": "krypton",
+    "Rb": "rubidium",
+    "Sr": "strontium",
+    "Y": "yttrium",
+    "Zr": "zirconium",
+    "Nb": "niobium",
+    "Mo": "molybdenum",
+    "Tc": "technetium",
+    "Ru": "ruthenium",
+    "Rh": "rhodium",
+    "Pd": "palladium",
+    "Ag": "silver",
+    "Cd": "cadmium",
+    "In": "indium",
+    "Sn": "tin",
+    "Sb": "antimony",
+    "Te": "tellurium",
+    "I": "iodine",
+    "Xe": "xenon",
+    "Cs": "caesium",
+    "Ba": "barium",
+    # Omitting lanthanoids (57-71)
+    "Hf": "hafnium",
+    "Ta": "tantalum",
+    "W": "tungsten",
+    "Re": "rhenium",
+    "Os": "osmium",
+    "Ir": "iridium",
+    "Pt": "platinum",
+    "Au": "gold",
+    "Hg": "mercury",
+    "Tl": "thallium",
+    "Pb": "lead",
+    "Bi": "bismuth",
+    "Po": "polonium",
+    "At": "astatine",
+    "Rn": "radon",
+    "Fr": "francium",
+    "Ra": "radium"
+    # Omitting 89-118+
+}
 
 GROUPS = {
     "halogen": ["cl", "f", "br", "i", "at"],
@@ -625,5 +629,5 @@ GROUPS = {
 
 # THis is a hack
 LIST_TRANSLATION = {
-        "C" : "Methyl",
-    }
+    "C": "Methyl",
+}

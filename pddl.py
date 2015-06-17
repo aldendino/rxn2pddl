@@ -28,7 +28,8 @@ def get_atom_description(reaction, atom):
     """ Let a PDDL atom description consist of:
         - atom name: c1, h3, alkyl5, r12, hmethyl4
         - atom pddl type: carbon, hydrogen, atom, atom, atom
-        - atom description: "", "", "(alkyl ?alkyl5)", "(or (alkyl ?r12) (hydrogen ?r12))", "(or (hydrogen ?hmethyl4) (methyl ?hmethyl4))"
+        - atom description: "", "", "(alkyl ?alkyl5)", "(or (alkyl ?r12) (hydrogen ?r12))",
+            "(or (hydrogen ?hmethyl4) (methyl ?hmethyl4))"
         Note that, in case of hydrogen, there is a collision of type and predicate.
         It may be necessary to create derived predicates "p_<name>", like
 
@@ -39,8 +40,10 @@ def get_atom_description(reaction, atom):
 
         Ignore this for now; assume type can be used as a predicate.
 
-        A further problem is that an R-group may be a multi-atom molecule. Ignore this as well; assume it's a simple atom.
-        Update (2014-12-19): Need to handle R-groups like [H,C,N,O], i.e. disjunctions of atoms. But not multi-atom molecules.
+        A further problem is that an R-group may be a multi-atom molecule.
+            Ignore this as well; assume it's a simple atom.
+        Update (2014-12-19): Need to handle R-groups like [H,C,N,O], i.e. disjunctions of atoms.
+            But not multi-atom molecules.
     """
     #print "Invoking get_atom_description on symbol " + atom.symbol
 
@@ -94,8 +97,10 @@ def get_complex_single_atom_desc(reaction, atomSymbol, atomName):
                 atomSymbols = chem.pseudoatomToList(mol.anchor.symbol)
                 if len(atomSymbols) > 1:
                     # See if it's a list; if it is, expand it into a disjunction
-                    nestedAtomDescs = [get_atom_description(reaction, chem.Atom(sym, 0, 0, 0, 0, 0)) for sym in atomSymbols]
-                    atomDescList.append(pddl_op("or", ["(%s ?%s)" % (get_predicate_from_type(d[1]), atomName) for d in nestedAtomDescs]))
+                    nestedAtomDescs = [get_atom_description(reaction, chem.Atom(sym, 0, 0, 0, 0, 0))
+                                       for sym in atomSymbols]
+                    atomDescList.append(pddl_op("or", ["(%s ?%s)" % (get_predicate_from_type(d[1]), atomName)
+                                                       for d in nestedAtomDescs]))
                 else:
                     atomDescList.append("(%s ?%s)" % (get_predicate_from_type(temp), atomName))
 
@@ -229,17 +234,11 @@ def getDomain(reaction):
             bondMatrixAfter[bond.fromAtom.aam][bond.toAtom.aam] = bond
             bondMatrixAfter[bond.toAtom.aam][bond.fromAtom.aam] = bond
 
-
-    #print bondMatrixBefore
-    #print bondMatrixAfter
-
     # Is there a Pythonic way of doing this?
     for x in range(1, size):
         for y in range(x + 1, size):
             if not bondMatrixBefore[x][y] == bondMatrixAfter[x][y]:
-                # Means both involved atoms are "affected" and must be action parameters; bond change contributes to effects
-                #print "Bond between #" + str(x) + " and #" + str(y) + " has changed from " + str(bondMatrixBefore[x][y]) + " to " + str(bondMatrixAfter[x][y])
-                
+
                 bond = None
                 if bondMatrixBefore[x][y] is not None:
                     bond = bondMatrixBefore[x][y]
@@ -259,15 +258,16 @@ def getDomain(reaction):
                 store_atom_in_type_dict(parametersByType, parameters[atomName2], atomName2)
 
                 if bondMatrixBefore[x][y] is not None:  # There is a bond that disappears
-                    effects.append("(not (" + get_bond_name_from_order(bondMatrixBefore[x][y].order) + " ?" + atomName1 + " ?" + atomName2 + "))")
-                    effects.append("(not (" + get_bond_name_from_order(bondMatrixBefore[x][y].order) + " ?" + atomName2 + " ?" + atomName1 + "))")
-                    #For STRIPS compatibility
-                    #effects.append("(not" + get_bond_name_from_order(bondMatrixBefore[x][y].order) + " ?" + atomName1 + " ?" + atomName2 + ")")
-                    #effects.append("(not" + get_bond_name_from_order(bondMatrixBefore[x][y].order) + " ?" + atomName2 + " ?" + atomName1 + ")")
+                    effects.append("(not (" + get_bond_name_from_order(bondMatrixBefore[x][y].order)
+                                   + " ?" + atomName1 + " ?" + atomName2 + "))")
+                    effects.append("(not (" + get_bond_name_from_order(bondMatrixBefore[x][y].order)
+                                   + " ?" + atomName2 + " ?" + atomName1 + "))")
 
                 if bondMatrixAfter[x][y] is not None:  # There is a bond that is created
-                    effects.append("(" + get_bond_name_from_order(bondMatrixAfter[x][y].order) + " ?" + atomName1 + " ?" + atomName2 + ")")
-                    effects.append("(" + get_bond_name_from_order(bondMatrixAfter[x][y].order) + " ?" + atomName2 + " ?" + atomName1 + ")")
+                    effects.append("(" + get_bond_name_from_order(bondMatrixAfter[x][y].order)
+                                   + " ?" + atomName1 + " ?" + atomName2 + ")")
+                    effects.append("(" + get_bond_name_from_order(bondMatrixAfter[x][y].order)
+                                   + " ?" + atomName2 + " ?" + atomName1 + ")")
 
 
     # Derive a list of parameter inequalities
@@ -309,12 +309,14 @@ def getDomain(reaction):
                 (atomName1, atomType1, atomDesc1) = get_atom_description(reaction, atom1)
                 (atomName2, atomType2, atomDesc2) = get_atom_description(reaction, atom2)
 
-                for (atomName, atomType, atomDesc) in zip([atomName1, atomName2], [atomType1, atomType2], [atomDesc1, atomDesc2]):
+                for (atomName, atomType, atomDesc) in \
+                        zip([atomName1, atomName2], [atomType1, atomType2], [atomDesc1, atomDesc2]):
                     
                     if atomName not in parameters.keys() and atomName not in nonparameters.keys():
                         #print "Adding non-parameter " + atomName + " with type " + atomType + " and desc " + atomDesc
                         nonparameters[atomName] = (atomType, atomDesc)
-                        # add the new nonparameter precondition if it is not a simple atom; simpe atoms are instead typed by "exists"
+                        # add the new nonparameter precondition if it is not a simple atom;
+                        # simpe atoms are instead typed by "exists"
                         if atomDesc != "":
                             precMol.append(atomDesc)
 
@@ -334,7 +336,8 @@ def getDomain(reaction):
             if atomName not in parameters.keys() and atomName not in nonparameters.keys():
                 #print "Adding non-parameter " + atomName + " with type " + atomType + " and desc " + atomDesc
                 nonparameters[atomName] = (atomType, atomDesc)
-                # add the new nonparameter precondition if it is not a simple atom; simpe atoms are instead typed by "exists"
+                # add the new nonparameter precondition if it is not a simple atom;
+                # simple atoms are instead typed by "exists"
                 if atomDesc != "":
                     precMol.append(atomDesc)
 
@@ -346,7 +349,7 @@ def getDomain(reaction):
 
         # Derive inequalities for the molecule, remove ones already mentioned on reaction level
         affectedIneq = list(set(get_inequalities(affectedByType)) - set(paramIneq))
-        affectedIneq = [] #temporarily removed
+        affectedIneq = []  # temporarily removed for STRIPS, no negations in the preconditions
 
         precMol_str = pddl_op("and", affectedIneq + precMol)
 
@@ -357,10 +360,12 @@ def getDomain(reaction):
         preconditions.append(precMol_str)
 
     #preconditions = []
-    pddl_domain = "\n(:action " + reaction.name
-    pddl_domain += "\n    :parameters (?" + " ?".join(["%s - %s" % (atomName, parameters[atomName]) for atomName in parameters.keys()]) + ")"
-    pddl_domain += "\n    :precondition " + pddl_op("and", paramIneq + paramPrecPredicates + preconditions)
-    pddl_domain += "\n    :effect " + pddl_op("and", effects) + ")\n"
+    indent = "    "
+    pddl_domain = "(:action " + reaction.name + "\n"
+    pddl_domain += indent + ":parameters (?" + " ?".join(["%s - %s" % (atomName, parameters[atomName])
+                                                          for atomName in parameters.keys()]) + ")\n"
+    pddl_domain += indent + ":precondition " + pddl_op("and", paramIneq + paramPrecPredicates + preconditions) + "\n"
+    pddl_domain += indent + ":effect " + pddl_op("and", effects) + ")\n"
 
     return pddl_domain
 
