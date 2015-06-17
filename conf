@@ -1,6 +1,6 @@
-rxn/
-list.txt
+input/rxn/
+input/list.txt
 ~/Desktop/
 domain.pddl
-header.txt
-footer.txt
+input/header.txt
+input/footer.txt
