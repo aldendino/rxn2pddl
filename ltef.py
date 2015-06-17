@@ -4,6 +4,8 @@ import pddl
 import os.path
 
 """
+usage: python ltef.py configuration_file
+
 These are the line by line specifications for the configuration file:
     The path to the directory holding the rxn files.
     The path to the text file containing a list of the rxn files to be run.
@@ -25,7 +27,7 @@ def gen_pddl(args, reaction):
 # Create the argparser
 # https://docs.python.org/dev/library/argparse.html
 
-parser = argparse.ArgumentParser(description='Reads an RXN v3000 file and generates PDDL for the reaction.')
+parser = argparse.ArgumentParser(description='Reads RXN v3000 files and generates a PDDL domain for the reactions.')
 parser.add_argument('conf', type=str, help='The configuration file.')
 args = parser.parse_args()
 
@@ -64,10 +66,13 @@ with open(rxnlist) as list:
         reaction = rxn.parse_rxn(rxnfile)
         pddl_domain = pddl.getDomain(reaction)
         actionlist.append(pddl_domain)
+        print "reaction processed: %s" % rxnfile
 
 with open(header) as head:
     with open(footer) as foot:
         domainstring = head.read() + "\n".join(actionlist) + foot.read()
 
-with open(os.path.join(domdir, domname), "w") as domain_out:
+domainpath = os.path.join(domdir, domname)
+with open(domainpath, "w") as domain_out:
     domain_out.write(domainstring)
+    print "domain written: %s" % domainpath
