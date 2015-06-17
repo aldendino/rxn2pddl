@@ -67,18 +67,6 @@ def get_atom_description(reaction, atom):
         else:
             atomDesc = get_complex_single_atom_desc(reaction, atom.symbol, atomName)
 
-    #if atom.symbol in reaction.rgroups.keys():
-    #    for mol in reaction.rgroups[atom.symbol]:
-    #        type = chem.sanitize_name(mol.anchor.symbol)
-    #        print "=======" + type
-    #        atomType = type
-    #        print atomType
-
-    print "=============================================="
-    for x in reaction.rgroups.keys():
-        print str(map((lambda y: y.anchor.symbol), reaction.rgroups[x]))
-    print "=============================================="
-
     return (atomName, atomType, atomDesc)
 
 
@@ -127,6 +115,7 @@ def pddl_op(op, myList):
     else:
         return ""
 
+
 def pddl_not_equal(name1, name2):
     return "(not (= ?%s ?%s))" % (name1, name2)
     #Satisfy STRIPS requirements
@@ -135,8 +124,6 @@ def pddl_not_equal(name1, name2):
 
 def get_atom_pddl_type_from_symbol(reaction, atom):
     name = "object"
-    print "ATOM SYMBOL: " + atom.symbol
-
     if atom.symbol in chem.ATOM_NAMES.keys():
         name = chem.ATOM_NAMES[atom.symbol]
     elif atom.symbol in reaction.rgroups.keys():
@@ -144,33 +131,17 @@ def get_atom_pddl_type_from_symbol(reaction, atom):
         #If there is only one choice for the type based on the rgroup list consisting of only one atom.
         if len(mols) == 1:
             name = chem.sanitize_name(mols[0].anchor.symbol)
-            print "1: " + name
         #Else there is more than one choice for the rgroup, and the supertype must be deduced.
         else:
-            # old double for loop way of checking for "set" (list) difference in only one direction.
-            #for key in chem.GROUPS.keys():
-            #    sametest = True
-            #    for mol in mols:
-            #        test_name = chem.sanitize_name(mol.anchor.symbol)
-            #        if not test_name in chem.GROUPS[key]:
-            #            print "key: %s, mol: %s" % (key, test_name)
-            #            sametest = False;
-            #            continue
-            #    if sametest:
-            #        name = key
-            #        break
-
             # Trying to find a "possible" group which matches the "current" set of elements in the R Group.
             for key in chem.GROUPS.keys():
                 current = set(map((lambda mol: chem.sanitize_name(mol.anchor.symbol)), mols))
                 possible = set(chem.GROUPS[key])
-                print "curr: " + str(current)
-                print "poss: " + str(possible)
+                #print "curr: " + str(current)
+                #print "poss: " + str(possible)
                 if len(symmetric_difference(current, possible)) == 0:
                     name = key
                     break
-
-            print "2: " + name
 
     return name
 
@@ -380,22 +351,10 @@ def getDomain(reaction):
 
     pddl_domain = ""
 
-    #domain_name = "Chemistry"
-    #requirements = ["typing", "equality"]
-#
-    #pddl_domain += "(define (domain " + domain_name + ")\n"
-#
-    #if len(requirements) > 0:
-    #    pddl_domain += "(:requirements :" + " :".join(requirements) + ")\n"
-
-    #types - built from a tree?
-
     pddl_domain += "\n(:action " + reaction.name
     pddl_domain += "\n    :parameters (?" + " ?".join(["%s - %s" % (atomName, parameters[atomName]) for atomName in parameters.keys()]) + ")"
     pddl_domain += "\n    :precondition " + pddl_op("and", paramIneq + paramPrecPredicates + preconditions)
     pddl_domain += "\n    :effect " + pddl_op("and", effects) + ")\n"
-
-    #pddl_domain += ")\n"
 
     return pddl_domain
 
