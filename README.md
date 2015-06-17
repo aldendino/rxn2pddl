@@ -8,7 +8,9 @@ This code has been tested to work on Python version 2.6.9, and requires the foll
 
 Usage: `python ltef.py configuration_file`
 
-##The configuration file is a text file with the following lines:
+##Configuration
+
+The configuration file is a text file with the following lines:
 
 2. The path to the directory holding the rxn files.
 3. The path to the text file containing a list of the rxn files to be run.
