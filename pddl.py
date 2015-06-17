@@ -7,6 +7,7 @@ import itertools
     differ in the type of arguments? This will cause a mess with R-groups.
 """
 
+
 def get_pddl_atom_name_from_atom(atom):
     name = atom.symbol
 
@@ -21,6 +22,7 @@ def get_pddl_atom_name_from_atom(atom):
     result = chem.sanitize_name(name) + "_" + str(atom.aam)
 
     return result
+
 
 def get_atom_description(reaction, atom):
     """ Let a PDDL atom description consist of:
@@ -50,7 +52,7 @@ def get_atom_description(reaction, atom):
 
     if atomType == "object":  # Not a simple atom, begs a non-empty description
         atomSymbols = chem.pseudoatomToList(atom.symbol)   
-        print "  atomSymbols=" + str(atomSymbols)
+        #print "  atomSymbols=" + str(atomSymbols)
         if len(atomSymbols) > 1:
             # This is a "list" atom, yields a disjunction of possible atoms
             atomDescList = []
@@ -137,18 +139,21 @@ def get_atom_pddl_type_from_symbol(reaction, atom):
             for key in chem.GROUPS.keys():
                 current = set(map((lambda mol: chem.sanitize_name(mol.anchor.symbol)), mols))
                 possible = set(chem.GROUPS[key])
-                #print "curr: " + str(current)
-                #print "poss: " + str(possible)
                 if len(symmetric_difference(current, possible)) == 0:
                     name = key
                     break
 
     return name
 
-# Symmetric difference of two sets, the union of the differences in both directions.
-# This is the set of elements in in either one of the sets, but not both.
+
 def symmetric_difference(setA, setB):
+    """
+    :param setA: first set
+    :param setB: second set
+    :return: the symmetric difference of the first and second set
+    """
     return (setA.difference(setB)).union(setB.difference(setA))
+
 
 def get_actual_atom_pddl_type_from_symbol(symbol):
     name = "object"
@@ -173,6 +178,7 @@ def get_bond_name_from_order(order):
         name = bondNames[order]
 
     return name
+
 
 def get_predicate_from_type(type):
     return "p" + type[0].upper() + type[1:]
@@ -287,7 +293,7 @@ def getDomain(reaction):
     preconditions = []
 
     for mol in reaction.reactants + reaction.agents:
-        print "Processing molecule\n" + str(mol)
+        #print "Processing molecule\n" + str(mol)
         # Preconditions due to this particular molecule
         precMol = []
         nonparameters = {}
@@ -340,6 +346,7 @@ def getDomain(reaction):
 
         # Derive inequalities for the molecule, remove ones already mentioned on reaction level
         affectedIneq = list(set(get_inequalities(affectedByType)) - set(paramIneq))
+        affectedIneq = [] #temporarily removed
 
         precMol_str = pddl_op("and", affectedIneq + precMol)
 
@@ -349,9 +356,8 @@ def getDomain(reaction):
 
         preconditions.append(precMol_str)
 
-    pddl_domain = ""
-
-    pddl_domain += "\n(:action " + reaction.name
+    #preconditions = []
+    pddl_domain = "\n(:action " + reaction.name
     pddl_domain += "\n    :parameters (?" + " ?".join(["%s - %s" % (atomName, parameters[atomName]) for atomName in parameters.keys()]) + ")"
     pddl_domain += "\n    :precondition " + pddl_op("and", paramIneq + paramPrecPredicates + preconditions)
     pddl_domain += "\n    :effect " + pddl_op("and", effects) + ")\n"

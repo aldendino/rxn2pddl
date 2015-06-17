@@ -2,8 +2,9 @@ import copy
 import random
 import re
 
+
 class Atom:
-    'This class is geared to store atom information supplied by v3000 molfiles'
+    """This class is geared to store atom information supplied by v3000 molfiles"""
 
     def __init__(self, symbol, x, y, z, rxnIndex, rxnAAM, attribs={}, aam=0):
         self.symbol = symbol
@@ -23,8 +24,9 @@ class Atom:
     def __eq__(self, other):
         return type(self) == type(other) and self.symbol == other.symbol and self.aam == other.aam
 
+
 class Bond:
-    'v3000 bond information container'
+    """v3000 bond information container"""
 
     'fromAtom and toAtom must be Atom objects!'
     def __init__(self, rxnIndex, order, fromAtom, toAtom, attribs={}):
@@ -43,6 +45,7 @@ class Bond:
         #print "  other: " + str(other)
         
         return type(self) == type(other) and self.order == other.order and ((self.fromAtom == other.fromAtom and self.toAtom == other.toAtom) or (self.fromAtom == other.toAtom and self.toAtom == other.fromAtom))
+
 
 class Molecule:
     """ A molecule can be either a complete molecule or a fragment.
@@ -151,8 +154,6 @@ class Molecule:
         # FINISHED, UNTESTED
 
 
-
-
 class Reaction:
     """stores a set of reactants, agents, products, and rgroups
 
@@ -193,8 +194,7 @@ class Reaction:
 
     @property
     def numberOfAtomsInReactants(self):
-        """ Counts all atoms (including pseudoatoms and R-atoms) in reactants.
-        """
+        """ Counts all atoms (including pseudoatoms and R-atoms) in reactants."""
         num = 0
 
         for mol in self.reactants:
@@ -204,9 +204,7 @@ class Reaction:
 
     @property
     def numberOfAtomsOverall(self):
-        """ Counts all atoms (including pseudo and R) in reaction,
-        including catalysts.
-        """
+        """ Counts all atoms (including pseudo and R) in reaction, including catalysts."""
         num = self.numberOfAtomsInReactants
 
         for mol in self.agents:
@@ -230,9 +228,8 @@ class Reaction:
         self.rgroups[rgroupName].append(molecule)
 
     def finalize(self):
-        """ Merely a sanity check
-        Only execute after everything has been added to reaction.
-        """
+        """Merely a sanity check
+        Only execute after everything has been added to reaction."""
 
         aamReactants = []
         aamAgents = []
