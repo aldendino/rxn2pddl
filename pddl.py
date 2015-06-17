@@ -291,6 +291,7 @@ def getDomain(reaction):
 
     # All reaction preconditions
     preconditions = []
+    exists_params = []
 
     for mol in reaction.reactants + reaction.agents:
         #print "Processing molecule\n" + str(mol)
@@ -349,21 +350,24 @@ def getDomain(reaction):
 
         # Derive inequalities for the molecule, remove ones already mentioned on reaction level
         affectedIneq = list(set(get_inequalities(affectedByType)) - set(paramIneq))
-        affectedIneq = []  # temporarily removed for STRIPS, no negations in the preconditions
 
         precMol_str = pddl_op("and", affectedIneq + precMol)
 
         if len(nonparameters.keys()) > 0:
             nonpTypes_str = " ".join(["?%s - %s" % (key, nonparameters[key][0]) for key in nonparameters.keys()])
-            precMol_str = "(exists (%s) %s)" % (nonpTypes_str, precMol_str)
+            #precMol_str = "(exists (%s) %s)" % (nonpTypes_str, precMol_str)
+            exists_params.append(nonpTypes_str)
+
 
         preconditions.append(precMol_str)
 
-    #preconditions = []
+
+
     indent = "    "
     pddl_domain = "(:action " + reaction.name + "\n"
     pddl_domain += indent + ":parameters (?" + " ?".join(["%s - %s" % (atomName, parameters[atomName])
-                                                          for atomName in parameters.keys()]) + ")\n"
+                                                          for atomName in parameters.keys()]) + " " \
+                   + " ".join(exists_params) + ")\n"
     pddl_domain += indent + ":precondition " + pddl_op("and", paramIneq + paramPrecPredicates + preconditions) + "\n"
     pddl_domain += indent + ":effect " + pddl_op("and", effects) + ")\n"
 

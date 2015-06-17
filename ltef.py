@@ -36,7 +36,7 @@ if not os.path.isfile(args.conf):
 
 with open(args.conf) as config:
     # Extract config file data
-    (rxndir, rxnlist, domdir, domname, header, footer) = map((lambda x: x.rstrip("\n")), config)
+    (rxndir, rxnlist, domdir, domname, header, footer) = map(lambda x: x.rstrip("\n"), config)
 
     # process for ~ symbol as home directory
     rxndir = os.path.expanduser(rxndir)
