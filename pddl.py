@@ -351,7 +351,9 @@ def getDomain(reaction):
         # Derive inequalities for the molecule, remove ones already mentioned on reaction level
         affectedIneq = list(set(get_inequalities(affectedByType)) - set(paramIneq))
 
-        precMol_str = pddl_op("and", affectedIneq + precMol)
+        #precMol_str = pddl_op("and", affectedIneq + precMol)
+        #precMol_str = pddl_op("and", precMol)  # no inequalities
+        precMol_str = precMol  # no inequalities, no nested and
 
         if len(nonparameters.keys()) > 0:
             nonpTypes_str = " ".join(["?%s - %s" % (key, nonparameters[key][0]) for key in nonparameters.keys()])
@@ -359,9 +361,13 @@ def getDomain(reaction):
             exists_params.append(nonpTypes_str)
 
 
-        preconditions.append(precMol_str)
+        #preconditions.append(precMol_str)
+        preconditions.extend(precMol_str) # no nested and
 
 
+    paramIneq = []  # no inequalities
+
+    print str(preconditions)
 
     indent = "    "
     pddl_domain = "(:action " + reaction.name + "\n"
