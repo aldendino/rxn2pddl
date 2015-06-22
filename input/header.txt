@@ -1,5 +1,5 @@
 (define (domain Chemical)
-(:requirements :typing :equality)
+(:requirements :strips :typing)
 (:types chemical_atom - object
         phosphorus sulfur magnesium aluminium chromium iron manganese mercury boron copper
         r_group - chemical_atom
