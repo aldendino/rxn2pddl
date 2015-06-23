@@ -15,5 +15,6 @@
     (doublebond ?x - chemical_atom ?y - chemical_atom)
     (triplebond ?x - chemical_atom ?y - chemical_atom)
     (aromaticbond ?x - chemical_atom ?y - chemical_atom)
+    (distinct ?x - chemical_atom ?y - chemical_atom)
     )
     

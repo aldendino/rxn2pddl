@@ -124,9 +124,9 @@ def pddl_op(op, myList):
 
 
 def pddl_not_equal(name1, name2):
-    return "(not (= ?%s ?%s))" % (name1, name2)
+    #return "(not (= ?%s ?%s))" % (name1, name2)
     #Satisfy STRIPS requirements
-    #return "(not= ?%s ?%s)" % (name1, name2)
+    return "(distinct ?%s ?%s)" % (name1, name2)
 
 
 def get_atom_pddl_type_from_symbol(reaction, atom):
@@ -353,7 +353,8 @@ def getDomain(reaction):
 
         #precMol_str = pddl_op("and", affectedIneq + precMol)
         #precMol_str = pddl_op("and", precMol)  # no inequalities
-        precMol_str = precMol  # no inequalities, no nested and
+        #precMol_str = precMol  # no inequalities, no nested and
+        precMol_str = affectedIneq + precMol  # inequalities, no nested and
 
         if len(nonparameters.keys()) > 0:
             nonpTypes_str = " ".join(["?%s - %s" % (key, nonparameters[key][0]) for key in nonparameters.keys()])
@@ -365,9 +366,7 @@ def getDomain(reaction):
         preconditions.extend(precMol_str) # no nested and
 
 
-    paramIneq = []  # no inequalities
-
-    print str(preconditions)
+    #paramIneq = []  # no inequalities
 
     indent = "    "
     pddl_domain = "(:action " + reaction.name + "\n"
