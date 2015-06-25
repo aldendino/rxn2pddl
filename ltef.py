@@ -15,15 +15,6 @@ These are the line by line specifications for the configuration file:
     The path to the footer file.
 """
 
-def gen_pddl(args, reaction):
-    #print str(reaction)
-    pddl_domain = pddl.getDomain(reaction)
-    print pddl_domain
-    domain_file = os.path.join(args.output_dir,  "domain_" + reaction.name + ".pddl")
-    with open(domain_file, 'w') as out:
-        out.write(pddl_domain)
-    print "PDDL domain description written to " + domain_file
-
 # Create the argparser
 # https://docs.python.org/dev/library/argparse.html
 
@@ -31,10 +22,12 @@ parser = argparse.ArgumentParser(description='Reads RXN v3000 files and generate
 parser.add_argument('conf', type=str, help='The configuration file.')
 args = parser.parse_args()
 
-if not os.path.isfile(args.conf):
-    raise IOError("Cannot open file " + args.conf)
+confpath = os.path.expanduser(args.conf)
 
-with open(args.conf) as config:
+if not os.path.isfile(confpath):
+    raise IOError("Cannot open file " + confpath)
+
+with open(confpath) as config:
     # Extract config file data
     (rxndir, rxnlist, domdir, domname, header, footer) = map(lambda x: x.rstrip("\n"), config)
 
