@@ -184,7 +184,6 @@ def reconstructpddlwithdistinct((problemname, domainname, objectlist, initconten
         for (id2, _) in objectlist:
             if id1 != id2:
                 distinct += "(distinct %s %s)\n" % (id1, id2)
-                distinct += "(distinct %s %s)\n" % (id2, id1)
     initcontent = distinct + initcontent
 
     init = "(:init\n%s)" % initcontent
