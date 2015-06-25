@@ -1,0 +1,12 @@
+P1-1Step.pddl
+P3-1Step.pddl
+P5-1Step.pddl
+P5-2-1Step.pddl
+P6-1Step.pddl
+P8-1Step.pddl
+P10-1Step.pddl
+P12-1Step.pddl
+P14-2-1Step.pddl
+P17-1Step.pddl
+P18-1Step.pddl
+P20-1Step.pddl

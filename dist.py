@@ -195,11 +195,24 @@ def reconstructpddlwithdistinct((problemname, domainname, objectlist, initconten
     return "(define\n%s)" % contents
 
 
-file = "/Users/aldendino/Documents/School/SitCalc/Alden/RA Files/Megan's Final Files/usedPDDL/P3-1Step.pddl"
+""" Sanitizes the comments, since they can include parenthisis, which will mess up the extract function """
+def sanitizecomments(pddl):
+    sanitized = ""
+    for line in pddl.split("\n"):
+        line = removeleadingchars(line, [' ', '\t'])
+        if not line.startswith(";"):
+            sanitized += line + "\n"
+    return sanitized
 
-with open(file) as pddlfile:
-    pddl = pddlfile.read()
-    out = parse(pddl)
-    print reconstructpddlwithdistinct(out)
+
+""" Convert a pddl problem string to have distinct bidirectional pairwise predicates in the init section """
+def convertpddldistinct(pddl):
+    sanitizedpddl = sanitizecomments(pddl)
+    return reconstructpddlwithdistinct(parse(sanitizedpddl))
+
+#with open(file) as pddlfile:
+#    pddl = pddlfile.read()
+#    out = parse(pddl)
+#    print reconstructpddlwithdistinct(out)
 
 #print extractsection("how   do(hello (you guys))what     foo", '(', ')')
