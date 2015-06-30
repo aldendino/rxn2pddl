@@ -1,0 +1,3 @@
+anhydrideReduction.rxn
+carboxylicAcidAndThionylChloride.rxn
+decarboxylationOfBetaKetoEsters.rxn

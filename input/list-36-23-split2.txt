@@ -1,0 +1,7 @@
+hydrolysisOfNitriles.rxn
+ketoneAndLDA.rxn
+nitrileReductionToAmine.rxn
+nitrileReductionToAmineWithH2.rxn
+oxidationOfAlcoholWithSodiumDichromate.rxn
+paalKnorrPyrroleSynthesis.rxn
+sandmeyerReaction.rxn

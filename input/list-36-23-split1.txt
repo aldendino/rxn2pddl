@@ -1,0 +1,6 @@
+anhydrideReduction.rxn
+carboxylicAcidAndThionylChloride.rxn
+decarboxylationOfBetaKetoEsters.rxn
+diazotization.rxn
+enolSN2AttackOnAlkylHalide.rxn
+gabrielSynthesis.rxn
