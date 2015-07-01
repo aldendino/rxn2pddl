@@ -204,10 +204,26 @@ def sanitizecomments(pddl):
     return sanitized
 
 
+""" Analyze properies about the number of objects in total and of specific types """
+def analyzeobjects(objectlist):
+    objectdict = {}
+    for (id, type) in objectlist:
+        if type in objectdict:
+            objectdict[type] += 1
+        else:
+            objectdict[type] = 1
+    for key in objectdict.keys():
+        print "type: %s * %s" % (key, objectdict[key])
+    print "total objects: %s" % len(objectlist)
+
+
 """ Convert a pddl problem string to have distinct bidirectional pairwise predicates in the init section """
 def convertpddldistinct(pddl):
     sanitizedpddl = sanitizecomments(pddl)
-    return reconstructpddlwithdistinct(parse(sanitizedpddl))
+    parsed = parse(sanitizedpddl)
+    analyzeobjects(parsed[2])
+    return reconstructpddlwithdistinct(parsed)
+
 
 #with open(file) as pddlfile:
 #    pddl = pddlfile.read()
