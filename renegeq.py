@@ -12,10 +12,19 @@ These are the line by line specifications for the configuration file:
 """
 
 
+def removedistinctfromheader(pddl):
+    return re.sub(r'\(distinct\s+\?[\w\d_]+\s+\?[\w\d_]+\s+-\s+[\w\d_]+\)\s*', "", pddl)
+
+
 def replacedistinctwithnegeq(pddl):
-    predremove = re.sub(r'\(distinct\s+\?[\w\d_]+\s+\?[\w\d_]+\s+-\s+[\w\d_]+\)\s*', "", pddl)
     return re.sub(r'\(\s*distinct\s+(\?[\w\d_]+\s+\?[\w\d_]+)\s*\)',
-                  lambda match: "(not (= " + match.group(1) + "))", predremove)
+                  lambda match: "(not (= " + match.group(1) + "))", pddl)
+
+
+def sanitizedistinct(pddl):
+    sanitizedheader = removedistinctfromheader(pddl)
+    sanitizedbody = replacedistinctwithnegeq(sanitizedheader)
+    return sanitizedbody
 
 
 parser = argparse.ArgumentParser(description='Convert pddl problem files to replace the'
@@ -52,7 +61,7 @@ with open(inputlist) as list:
         if not os.path.isfile(pddlfile):
             raise IOError("Cannot open file " + pddlfile)
         with open(pddlfile) as pddl:
-            converted = replacedistinctwithnegeq(pddl.read())
+            converted = sanitizedistinct(pddl.read())
         pddlout = os.path.join(outputdir, filename)
         with open(pddlout, 'w') as out:
             out.write(converted)

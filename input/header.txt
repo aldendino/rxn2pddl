@@ -3,11 +3,11 @@
 (:types chemical_atom - object
         phosphorus sulfur magnesium aluminium chromium iron manganese mercury boron copper
         r_group - chemical_atom
-        halogen alkali_metal hcno - r_group
-        hydrogen carbon - hc
+        halogen alkalimetal hcno - r_group
         hc nitrogen oxygen - hcno
+        hydrogen carbon - hc
         chlorine fluorine bromine iodine astatine - halogen
-        lithium sodium potassium rubidium caesium francium - alkali_metal
+        lithium sodium potassium rubidium caesium francium - alkalimetal
         )
 
 (:predicates
