@@ -33,7 +33,7 @@ o3 - oxygen
 (bond c1 c3)
 (bond c2 c3)
 (bond c3 c1)
-(bond c3 c1)
+(bond c3 c2)
 (bond c3 c4)
 (bond c4 c3)
 (doublebond c4 c5)
