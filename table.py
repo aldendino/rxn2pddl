@@ -14,14 +14,15 @@ These are the line by line specifications for the configuration file:
 """
 
 class Results:
-    categorylist = ["Problem", "Solution", "Total Time (s)", "Peak Memory (KB)", "Plan Cost", "Variables",
+    categorylist = ["Problem", "Solution", "Total Time (s)", "Peak Memory (KB)", "Exit Status", "Plan Cost", "Variables",
                     "Facts", "Bytes per State", "Relevant Atoms", "Auxiliary Atoms"]
 
-    def __init__(self, solution, totaltime, peakmemory, plancost, variables, facts,
+    def __init__(self, solution, totaltime, peakmemory, exitstatus, plancost, variables, facts,
                  bytesperstate, relevantatoms, auxiliaryatoms):
         self.sol = solution
         self.tottime = totaltime
         self.peakmem = peakmemory
+        self.exitstat = exitstatus
         self.plancost = plancost
         self.vars = variables
         self.facts = facts
@@ -30,8 +31,8 @@ class Results:
         self.auxatoms = auxiliaryatoms
 
     def aslist(self):
-        return [self.sol, self.tottime, self.peakmem, self.plancost, self.vars,
-                self.facts, self.bps, self.relatoms, self.auxatoms]
+        return [self.sol, self.tottime, self.peakmem, self.exitstat, self.plancost,
+                self.vars, self.facts, self.bps, self.relatoms, self.auxatoms]
 
 
 def resolvesearch(search):
@@ -45,13 +46,14 @@ def parseresults(resultstring):
     sol = ""
     tottime = resolvesearch(re.search(r'Total time: ([\d.]+)s', resultstring))
     peakmem = resolvesearch(re.search(r'Peak memory: ([\d.]+) KB', resultstring))
+    exitstat = resolvesearch(re.search(r'returned non-zero exit status (-?[\d]+)', resultstring))
     plancost = resolvesearch(re.search(r'Plan cost: ([\d]+)', resultstring))
     vars = resolvesearch(re.search(r'Variables: ([\d]+)', resultstring))
     facts = resolvesearch(re.search(r'Facts: ([\d]+)', resultstring))
     bps = resolvesearch(re.search(r'Bytes per state: ([\d]+)', resultstring))
     relatoms = resolvesearch(re.search(r'([\d]+) relevant atoms', resultstring))
     auxatoms = resolvesearch(re.search(r'([\d]+) auxiliary atoms', resultstring))
-    return Results(sol, tottime, peakmem, plancost, vars, facts, bps, relatoms, auxatoms)
+    return Results(sol, tottime, peakmem, exitstat, plancost, vars, facts, bps, relatoms, auxatoms)
 
 
 def writecsv(filename, iterable):
