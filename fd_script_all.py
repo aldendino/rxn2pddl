@@ -2,6 +2,8 @@ import commands
 import sys
 import os.path
 
+# requires bash shell environment!
+
 # This script takes in a config file with a specific format
 #   The path to the top level directory for fast-downward
 #   The path to the domain file

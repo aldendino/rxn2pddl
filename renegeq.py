@@ -6,10 +6,16 @@ import re
 usage: python renegeq.py configuration_file
 
 These are the line by line specifications for the configuration file:
-    The path to the directory holding the problem files.
-    The path to the text file containing a list of the pddl problem files to be converted.
+    The path to the directory holding the domain files.
+    The path to the text file containing a list of the pddl domain files to be converted.
     The path to the directory where the converted files should be placed.
 """
+
+def addequalitytorequirements(pddl):
+    if re.search(r':equality', pddl) is None:
+        return re.sub(r'\(\s*:requirements((\s+:\w+)*)\s*\)', lambda match: "(:requirements" + match.group(1) + " :equality)", pddl)
+    else:
+        return pddl
 
 
 def removedistinctfromheader(pddl):
@@ -24,7 +30,8 @@ def replacedistinctwithnegeq(pddl):
 def sanitizedistinct(pddl):
     sanitizedheader = removedistinctfromheader(pddl)
     sanitizedbody = replacedistinctwithnegeq(sanitizedheader)
-    return sanitizedbody
+    addequality = addequalitytorequirements(sanitizedbody)
+    return addequality
 
 
 parser = argparse.ArgumentParser(description='Convert pddl problem files to replace the'
