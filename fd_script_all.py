@@ -3,6 +3,7 @@ import sys
 import os.path
 
 # requires bash shell environment!
+# New
 
 # This script takes in a config file with a specific format
 #   The path to the top level directory for fast-downward
@@ -14,20 +15,26 @@ import os.path
 #   The timeout value (see "man timeout" for options)
 #   The path to the output directory
 
+tee = "> >(tee %s) 2> >(tee %s >&2)"
+
 def run_problem_new(filename, timeout):
     print(filename)
-    output_file = os.path.join(out_path, filename + ".txt")
-    command = "timeout %s %sfast-downward.py %s %s%s --search %s | tee %s" % (timeout, fd_path, dm_path, pb_path, filename, heuristic, output_file)
+    output_file = os.path.join(out_path, filename)
+    out = tee % (output_file + "-out.txt", output_file + "-err.txt")
+    command = "timeout %s %sfast-downward.py %s %s%s --search %s %s" % \
+              (timeout, fd_path, dm_path, pb_path, filename, heuristic, out)
     output = commands.getoutput(command)
     print(output)
 
 def run_problem_old(filename, timeout):
     print(filename)
-    output_file = os.path.join(out_path, filename + ".txt")
+    output_file = os.path.join(out_path, filename)
+    out = tee % (output_file + "-out.txt", output_file + "-err.txt")
     translate_command = "%stranslate/translate.py %s %s%s" % (fd_path, dm_path, pb_path, filename)
     preprocess_command = "%spreprocess/preprocess < output.sas" % (fd_path)
     search_command = "%ssearch/downward --search %s < output" % (fd_path, heuristic)
-    command = "timeout %s %s && %s && %s | tee %s" % (timeout, translate_command, preprocess_command, search_command, output_file)
+    command = "timeout %s %s && %s && %s %s" % \
+              (timeout, translate_command, preprocess_command, search_command, out)
     output = commands.getoutput(command)
     print(output)
 
