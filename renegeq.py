@@ -19,7 +19,7 @@ def addequalitytorequirements(pddl):
 
 
 def removedistinctfromheader(pddl):
-    return re.sub(r'\(distinct\s+\?[\w\d_]+\s+\?[\w\d_]+\s+-\s+[\w\d_]+\)\s*', "", pddl)
+    return re.sub(r'\(distinct\s+\?[\w\d_]+\s+-\s+[\w\d_]+\s+\?[\w\d_]+\s+-\s+[\w\d_]+\s*\)\s*', "", pddl)
 
 
 def replacedistinctwithnegeq(pddl):
