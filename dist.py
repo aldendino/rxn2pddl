@@ -54,6 +54,16 @@ def readuntilchar(input, char):
     return content, leftover
 
 
+""" Separate a string into a tuple based on the first occurrence of a delimiter """
+def readuntilchars(input, charlist):
+    count = 0
+    while input[count] not in charlist:
+        count += 1
+    content = input[0:count]
+    leftover = input[count:]
+    return content, leftover
+
+
 """
     Sepatate a string into a header, extraction, and footer, based on a start and end delimiter
     Note that this preserves the structure of nested occurrences of the specified delimiters
@@ -85,11 +95,11 @@ def parseobjects(objects, ignorelist):
 
     #itemlist = re.split(r' |\n|\t', objects)
     #while len(itemlist) >= 3:
-    #    id = itemlist[0]
+    #    paramid = itemlist[0]
     #    dash = itemlist[1]
-    #    type = itemlist[2]
+    #    paramtype = itemlist[2]
     #    itemlist = itemlist[3:]
-    #    objectslist.append((id, type))
+    #    objectslist.append((paramid, paramtype))
 
     for line in objects.rsplit("\n"):
         line = removeleadingchars(line, ignorelist)
@@ -99,12 +109,12 @@ def parseobjects(objects, ignorelist):
             continue
         itemlist = re.split(r' |\n|\t', line)
         if len(itemlist) >= 3:
-            id = itemlist[0]
+            paramid = itemlist[0]
             dash = itemlist[1]
-            type = itemlist[2]
+            paramtype = itemlist[2]
             if dash != "-":
                 continue
-            objectslist.append((id, type))
+            objectslist.append((paramid, paramtype))
 
     return objectslist
 
