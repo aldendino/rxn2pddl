@@ -22,6 +22,14 @@ class Domain:
         self.actions = None
 
 
+def sanitizechars(text, list):
+    sanitized = ""
+    for i in range(0, len(text)):
+        if text[i] not in list:
+            sanitized += text[i]
+    return sanitized
+
+
 def sanitizeparams(paramlist):
     return map(lambda param: param[1:], paramlist)
 
@@ -71,6 +79,7 @@ def parseaction(action, ignorelist):
     action = dist.removeleadingchars(action, ignorelist)
     _, parameters, action = dist.extractsection(action, '(', ')')
     splitlist = re.split(r' |\n|\t', parameters)
+    splitlist = filter(lambda item: item != '', splitlist)
     paramlist = []
     paramdict = {}
     while splitlist:
@@ -160,142 +169,88 @@ def constructpreconditions(action):
     posprecaxioms, negprecaxioms = action.preclist
     prec = ""
     if posprecaxioms or negprecaxioms:
-        prec += "poss(" + action.actionname + constructparameters(action.paramlist, 'S') + " :- " \
-                + constructaxioms((posprecaxioms, negprecaxioms), action.paramdict) + "\n"
+        prec += "poss(" + action.actionname + constructparameters(action.paramlist, 'S') + ") :- " \
+                + constructaxioms((posprecaxioms, negprecaxioms), action.paramdict) + "\n\n"
     return prec
 
 
 def constructposeffects(action):
+    # implement a set to keep discontiguous information
     poseffaxioms, negeffaxioms = action.efflist
     poseffstr = ""
     for poseff in poseffaxioms:
         poseffparams = map(lambda paramid: (paramid, action.paramdict[paramid]), poseff[1])
         poseffstr += poseff[0] + constructparameters(poseffparams, '[A|S]') + " :- A = " \
-               + action.actionname + constructparameters(action.paramlist, 'S') + ".\n"
+               + action.actionname + constructparameters(action.paramlist, 'S') + ".\n\n"
     return poseffstr
 
 
 def constructprolog(parseddomain):
     preclist = []
+    posefflist = []
+    negefflist = []
     efflist = []
 
     negeff = ""
     negeffdict = {}
+
+    #actionset = set()
+
     for action in parseddomain.actions:
+        #actionset.add((action.actionname, len(action.paramlist)))
+
         preclist.append(constructpreconditions(action))
-        efflist.append(constructposeffects(action))
+        posefflist.append(constructposeffects(action))
 
         # negative effect collector... how should different parameter names be handled?
+        # implement a set to keep discontiguous information
         poseffaxioms, negeffaxioms = action.efflist
         for negeff in negeffaxioms:
             if negeff[0] in negeffdict:
-                negeffdict[negeff[0]].append(action.actionname)
+                negeffdict[negeff[0]][1].append(action)
             else:
-                negeffdict[negeff[0]] = [action.actionname]
+                renamednegeff = map(lambda paramid: (paramid, action.paramdict[paramid]), negeff[1])
+                negeffdict[negeff[0]] = (renamednegeff, [action])
 
-    print negeffdict
+    #print actionset
+
+    #print negeffdict
+
+    # This doesn't account for parameters that exists in the action parameters,
+    # but not the fluent parameters...
+    # And, the parameters are not guaranteed to match.
 
     for negeffkey in negeffdict:
-        print negeffkey + " :- " + str(negeffdict[negeffkey])
+        negefflist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], '[A|S]') + " :- " \
+              + ", ".join(map(lambda action: "not A = " + action.actionname
+                                             + constructparameters(action.paramlist, 'S'),
+                              negeffdict[negeffkey][1])) + ", " \
+              + negeffkey + constructparameters(negeffdict[negeffkey][0], 'S') + ".\n\n")
 
     precstr = ""
-    for item in preclist: precstr += item
+    for item in preclist:
+        precstr += item
 
-    effstr = ""
-    for item in efflist: effstr += item
+    poseffstr = ""
+    for item in posefflist:
+        poseffstr += item
 
-    #print precstr
-    #print effstr
+    negeffstr = ""
+    for item in negefflist:
+        negeffstr += item
+
+    effstr = poseffstr + "\n\n" + negeffstr
+
+    print precstr
+    print effstr
 
 
-path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
+#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
+#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Logistics/Track1/Typed/domain.pddl"
+path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/domain-28.pddl"
 
 with open(path) as file:
     text = file.read()
     domain = parsepddldomain(text)
     constructprolog(domain)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#def sanitizechars(text, list):
-#    sanitized = ""
-#    for i in range(0, len(text)):
-#        if text[i] not in list:
-#            sanitized += text[i]
-#    return sanitized
-#
-#
-#
-#def section(text, startdelim, enddelim):
-#
-#    startpos = 0
-#
-#    startcount = 0
-#    endcount = 0
-#
-#    for i in range(0, len(text)):
-#        if text[i] == startdelim:
-#            startcount += 1
-#            if startcount == 1:
-#                startpos = i
-#        if text[i] == enddelim:
-#            endcount += 1
-#        if startcount == endcount and startcount != 0:
-#            head = text[0:startpos]
-#            body = section(text[startpos+1:i], startdelim, enddelim)
-#            tail = section(text[i+1:len(text)], startdelim, enddelim)
-#            info = [head, body, tail]
-#            info = filter(None, info)
-#            return info
-#
-#    return None
-#
-##print section("hello (my (darling)) world", '(', ')')
-#
-#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
-#
-#
-#def printinfo(info):
-#    for i in info:
-#        if type(i) == type(list):
-#            printinfo(i)
-#        else:
-#            print i
-#
-#with open(path) as file:
-#    text = file.read()
-#    santext = sanitizechars(text, ['\n', '\t'])
-#    printinfo(section(santext, '(', ')'))
