@@ -1,11 +1,17 @@
 import dist
 import re
+import os
+import argparse
 
 
 """
     Convert a PDDL domain into a PROLOG domain.
 """
 
+
+"""
+    Classes for sanity's sake
+"""
 
 class Action:
     def __init__(self):
@@ -19,6 +25,7 @@ class Action:
 class Domain:
     def __init__(self):
         self.domainname = "unknown"
+        self.types = []
         self.actions = []
 
 
@@ -26,6 +33,11 @@ class Dual:
     def __init__(self):
         self.pos = []
         self.neg = []
+
+
+"""
+    Parsing tools
+"""
 
 
 def sanitizechars(text, list):
@@ -123,6 +135,31 @@ def parseaction(action, ignorelist):
     return parsedaction
 
 
+def parsetypes(typestr):
+    typeslist = []
+
+    itemlist = filter(lambda item: item != '', re.split(r' |\t|\n', typestr))
+    templist = []
+    dashflag = False
+
+    for item in itemlist:
+        if item == '-':
+            dashflag = True
+        else:
+            if dashflag:
+                typeslist.append((item, templist))
+                templist = []
+                dashflag = False
+            else:
+                templist.append(item)
+
+    # Catch the case where there is no type hierarchy
+    if templist:
+        typeslist.extend(map(lambda item: (item, []), templist))
+
+    return typeslist
+
+
 def parsepddldomain(pddl):
     ignorelist = [' ', '\n', '\t']
 
@@ -131,6 +168,11 @@ def parsepddldomain(pddl):
     (_, requirments, content) = dist.extractsection(content, '(', ')')
     (_, types, content) = dist.extractsection(content, '(', ')')
     (_, predicates, content) = dist.extractsection(content, '(', ')')
+
+    types = dist.removeleadingchars(types, ignorelist)
+    types = dist.removeleadingstring(types, ":types")
+    types = dist.removeleadingchars(types, ignorelist)
+    typeslist = parsetypes(types)
 
     actionlist = []
     section = dist.extractsection(content, '(', ')')
@@ -153,37 +195,60 @@ def parsepddldomain(pddl):
 
     parseddomain = Domain()
     parseddomain.domainname = domainname
+    parseddomain.types = typeslist
     parseddomain.actions = actions
 
     return parseddomain
 
 
+"""
+    Constructing tools
+"""
+
+
+def determinediscontiguous(action):
+    disc = set()
+    # + 1 since the situation parameter will be added.
+    for item in action.efflist.pos:
+        disc.add((item[0], len(item[1]) + 1))
+    for item in action.efflist.neg:
+        disc.add((item[0], len(item[1]) + 1))
+    return disc
+
+
+def constructtypes(typeslist):
+    # Note, this will ignore types which have an empty list, i.e. ('type', [])
+    return map(lambda (name, namelist): "\n".join(map(lambda item: "{0}(X) :- {1}(X).".format(name, item), namelist)), typeslist)
+
+
+def convertparamname(paramid, paramtype):
+    return str.upper(paramid + "_" + paramtype)
+
+
 def constructparameters(parameters, situation):
-    convertparams = map(lambda (paramid, paramtype): str.upper(paramid + "_" + paramtype), parameters)
+    convertparams = map(lambda (paramid, paramtype): convertparamname(paramid, paramtype), parameters)
     return "(" + ", ".join(convertparams + [situation]) + ")"
 
 
 def renamelist(paramlist, paramdict):
-    return map(lambda param: str.upper(param + "_" + paramdict[param]), paramlist)
+    return map(lambda param: convertparamname(param, paramdict[param]), paramlist)
 
 
 def constructaxioms(axioms, paramdict):
-    posprecaxioms, negprecaxioms = axioms
-    renamedposaxioms = map(lambda (name, paramlist): (name, renamelist(paramlist, paramdict)), posprecaxioms)
-    renamednegaxioms = map(lambda (name, paramlist): (name, renamelist(paramlist, paramdict)), negprecaxioms)
-    convertedposaxioms = map(lambda (name, paramlist): name + "(" + ", ".join(paramlist + ['S']) + ")", renamedposaxioms)
-    convertednegaxioms = map(lambda (name, paramlist): "not " + name + "(" + ", ".join(paramlist + ['S']) + ")", renamednegaxioms)
-    convertedaxioms = convertedposaxioms + convertednegaxioms
-    return ", ".join(convertedaxioms) + "."
+    convertedaxioms = Dual()
+    convertedaxioms.pos = map(lambda (name, paramlist): "{0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.pos)
+    convertedaxioms.neg = map(lambda (name, paramlist): "not {0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.neg)
+    combinedaxioms = convertedaxioms.pos + convertedaxioms.neg
+    for axiom in combinedaxioms:
+        print axiom
+    return ", ".join(combinedaxioms)
 
 
 def constructpreconditions(action):
-    posprecaxioms = action.preclist.pos
-    negprecaxioms = action.preclist.neg
     prec = ""
-    if posprecaxioms or negprecaxioms:
+    if action.preclist.pos or action.preclist.neg:
         prec += "poss(" + action.actionname + constructparameters(action.paramlist, 'S') + ") :- " \
-                + constructaxioms((posprecaxioms, negprecaxioms), action.paramdict) + "\n\n"
+                + constructaxioms(action.preclist, action.paramdict) + ".\n"
     return prec
 
 
@@ -194,7 +259,7 @@ def constructposeffects(action):
     for poseff in poseffaxioms:
         poseffparams = map(lambda paramid: (paramid, action.paramdict[paramid]), poseff[1])
         poseffstr += poseff[0] + constructparameters(poseffparams, '[A|S]') + " :- A = " \
-               + action.actionname + constructparameters(action.paramlist, 'S') + ".\n\n"
+               + action.actionname + constructparameters(action.paramlist, 'S') + ".\n"
     return poseffstr
 
 
@@ -214,27 +279,25 @@ def constructprolog(parseddomain):
     preclist = []
     posefflist = []
     negefflist = []
-    efflist = []
 
-    negeff = ""
     negeffdict = {}
 
-    fluentset = set()
+    typesstr = "\n".join(constructtypes(parseddomain.types))
+
+    discontiguous = set()
 
     for action in parseddomain.actions:
-        #actionset.add((action.actionname, len(action.paramlist)))
+        discontiguous = discontiguous.union(determinediscontiguous(action))
 
         preclist.append(constructpreconditions(action))
+
         posefflist.append(constructposeffects(action))
 
         # negative effect collector... how should different parameter names be handled?
         # implement a set to keep discontiguous information
         negeffdict.update(buildnegeffdict(action))
 
-
-    #print fluentset
-
-    #print negeffdict
+    discstr = "\n".join(map(lambda (name, length): ":- dynamic " + name + "/" + str(length) + ".", sorted(discontiguous)))
 
     # This doesn't account for parameters that exists in the action parameters,
     # but not the fluent parameters...
@@ -245,22 +308,46 @@ def constructprolog(parseddomain):
               + ", ".join(map(lambda action: "not A = " + action.actionname
                                              + constructparameters(action.paramlist, 'S'),
                               negeffdict[negeffkey][1])) + ", " \
-              + negeffkey + constructparameters(negeffdict[negeffkey][0], 'S') + ".\n\n")
+              + negeffkey + constructparameters(negeffdict[negeffkey][0], 'S') + ".\n")
 
-    precstr = "".join(preclist)
-    poseffstr = "".join(posefflist)
-    negeffstr = "".join(negefflist)
-    effstr = poseffstr + "\n\n" + negeffstr
+    precstr = "\n".join(preclist)
+    poseffstr = "\n".join(posefflist)
+    negeffstr = "\n".join(negefflist)
+    effstr = poseffstr + "\n" + negeffstr
 
-    return precstr + "\n\n" + effstr
+    return "\n\n".join([discstr, typesstr, precstr, effstr])
 
 
-path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
+"""
+    File manipulation
+"""
+
+
+def createprologfrompddl(inpath, outpath):
+    inpath = os.path.expanduser(inpath)
+    outpath = os.path.expanduser(outpath)
+    if not os.path.isfile(inpath):
+        raise IOError("Cannot open file " + inpath)
+    with open(inpath, 'r') as infile:
+        pddl = infile.read()
+        prolog = constructprolog(parsepddldomain(pddl))
+    with open(outpath, 'w') as outfile:
+        outfile.write(prolog)
+
+
+#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
 #path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Logistics/Track1/Typed/domain.pddl"
-#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/domain-28.pddl"
+path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/domain-28.pddl"
 
-with open(path) as file:
-    text = file.read()
-    domain = parsepddldomain(text)
-    print constructprolog(domain)
+out = "/Users/aldendino/Desktop/out.pl"
+
+
+#parser = argparse.ArgumentParser(description='Convert pddl domain into prolog domain.')
+#parser.add_argument('inpath', type=str, help='The input path to a pddl domain file.')
+#parser.add_argument('outpath', type=str, help='The output path to a prolog domain file.')
+#args = parser.parse_args()
+
+#createprologfrompddl(args.inpath, args.outpath)
+
+createprologfrompddl(path, out)
 
