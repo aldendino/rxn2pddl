@@ -9,17 +9,23 @@ import re
 
 class Action:
     def __init__(self):
-        self.actionname = None
-        self.paramlist = None
-        self.paramdict = None
-        self.preclist = None
-        self.efflist = None
+        self.actionname = "unknown"
+        self.paramlist = []
+        self.paramdict = {}
+        self.preclist = []
+        self.efflist = []
 
 
 class Domain:
     def __init__(self):
-        self.domainname = None
-        self.actions = None
+        self.domainname = "unknown"
+        self.actions = []
+
+
+class Dual:
+    def __init__(self):
+        self.pos = []
+        self.neg = []
 
 
 def sanitizechars(text, list):
@@ -35,37 +41,43 @@ def sanitizeparams(paramlist):
 
 
 def parseaxiom(axiomstr):
-    poslist = []
-    neglist = []
+    lists = Dual()
+    # Separate axioms based on whether they are negated or not,
+    # and place them in the appropriate list.
     if axiomstr.startswith("not"):
+        # Account for the negation being applied to multiple axioms.
+        # Note that this does not account for any further nested negations.
         section = dist.extractsection(axiomstr, '(', ')')
         while section is not None:
             _, axiom, content = section
             listitems = re.split(r' |\n|\t', axiom)
-            neglist.append((listitems[0], sanitizeparams(listitems[1:])))
+            lists.neg.append((listitems[0], sanitizeparams(listitems[1:])))
             section = dist.extractsection(content, '(', ')')
     else:
         listitems = re.split(r' |\n|\t', axiomstr)
-        poslist.append((listitems[0], sanitizeparams(listitems[1:])))
-    return poslist, neglist
+        lists.pos.append((listitems[0], sanitizeparams(listitems[1:])))
+    return lists
 
 
 def parselist(liststr):
-    posaxiomlist = []
-    negaxiomlist = []
+    lists = Dual()
+    ## Separate axioms based on whether they are in an and or not,
+    # then break the axiom or axioms into positive and negative lists.
     if liststr.startswith("and"):
+        # Account for the and being applied to multiple axioms.
+        # Note that this does not account for any further nested ands.
         section = dist.extractsection(liststr, '(', ')')
         while section is not None:
             _, axiom, content = section
             parsed = parseaxiom(axiom)
-            posaxiomlist.extend(parsed[0])
-            negaxiomlist.extend(parsed[1])
+            lists.pos.extend(parsed.pos)
+            lists.neg.extend(parsed.neg)
             section = dist.extractsection(content, '(', ')')
     else:
         parsed = parseaxiom(liststr)
-        posaxiomlist.extend(parsed[0])
-        negaxiomlist.extend(parsed[1])
-    return posaxiomlist, negaxiomlist
+        lists.pos.extend(parsed.pos)
+        lists.neg.extend(parsed.neg)
+    return lists
 
 
 def parseaction(action, ignorelist):
@@ -105,8 +117,8 @@ def parseaction(action, ignorelist):
     parsedaction.actionname = actionname
     parsedaction.paramlist = paramlist #list for ordering
     parsedaction.paramdict = paramdict #dict for quick lookup
-    parsedaction.preclist = preclist #2-tuple (+, -)
-    parsedaction.efflist = efflist #2-tuple (+, -)
+    parsedaction.preclist = preclist #Dual
+    parsedaction.efflist = efflist #Dual
 
     return parsedaction
 
@@ -166,7 +178,8 @@ def constructaxioms(axioms, paramdict):
 
 
 def constructpreconditions(action):
-    posprecaxioms, negprecaxioms = action.preclist
+    posprecaxioms = action.preclist.pos
+    negprecaxioms = action.preclist.neg
     prec = ""
     if posprecaxioms or negprecaxioms:
         prec += "poss(" + action.actionname + constructparameters(action.paramlist, 'S') + ") :- " \
@@ -176,13 +189,25 @@ def constructpreconditions(action):
 
 def constructposeffects(action):
     # implement a set to keep discontiguous information
-    poseffaxioms, negeffaxioms = action.efflist
+    poseffaxioms = action.efflist.pos
     poseffstr = ""
     for poseff in poseffaxioms:
         poseffparams = map(lambda paramid: (paramid, action.paramdict[paramid]), poseff[1])
         poseffstr += poseff[0] + constructparameters(poseffparams, '[A|S]') + " :- A = " \
                + action.actionname + constructparameters(action.paramlist, 'S') + ".\n\n"
     return poseffstr
+
+
+def buildnegeffdict(action):
+    negeffdict = {}
+    negeffaxioms = action.efflist.neg
+    for negeff in negeffaxioms:
+        if negeff[0] in negeffdict:
+            negeffdict[negeff[0]][1].append(action)
+        else:
+            renamednegeff = map(lambda paramid: (paramid, action.paramdict[paramid]), negeff[1])
+            negeffdict[negeff[0]] = (renamednegeff, [action])
+    return negeffdict
 
 
 def constructprolog(parseddomain):
@@ -194,7 +219,7 @@ def constructprolog(parseddomain):
     negeff = ""
     negeffdict = {}
 
-    #actionset = set()
+    fluentset = set()
 
     for action in parseddomain.actions:
         #actionset.add((action.actionname, len(action.paramlist)))
@@ -204,15 +229,10 @@ def constructprolog(parseddomain):
 
         # negative effect collector... how should different parameter names be handled?
         # implement a set to keep discontiguous information
-        poseffaxioms, negeffaxioms = action.efflist
-        for negeff in negeffaxioms:
-            if negeff[0] in negeffdict:
-                negeffdict[negeff[0]][1].append(action)
-            else:
-                renamednegeff = map(lambda paramid: (paramid, action.paramdict[paramid]), negeff[1])
-                negeffdict[negeff[0]] = (renamednegeff, [action])
+        negeffdict.update(buildnegeffdict(action))
 
-    #print actionset
+
+    #print fluentset
 
     #print negeffdict
 
@@ -227,30 +247,20 @@ def constructprolog(parseddomain):
                               negeffdict[negeffkey][1])) + ", " \
               + negeffkey + constructparameters(negeffdict[negeffkey][0], 'S') + ".\n\n")
 
-    precstr = ""
-    for item in preclist:
-        precstr += item
-
-    poseffstr = ""
-    for item in posefflist:
-        poseffstr += item
-
-    negeffstr = ""
-    for item in negefflist:
-        negeffstr += item
-
+    precstr = "".join(preclist)
+    poseffstr = "".join(posefflist)
+    negeffstr = "".join(negefflist)
     effstr = poseffstr + "\n\n" + negeffstr
 
-    print precstr
-    print effstr
+    return precstr + "\n\n" + effstr
 
 
-#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
+path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
 #path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Logistics/Track1/Typed/domain.pddl"
-path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/domain-28.pddl"
+#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/domain-28.pddl"
 
 with open(path) as file:
     text = file.read()
     domain = parsepddldomain(text)
-    constructprolog(domain)
+    print constructprolog(domain)
 
