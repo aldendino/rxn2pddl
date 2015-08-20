@@ -234,18 +234,40 @@ def renamelist(paramlist, paramdict):
     return map(lambda param: convertparamname(param, paramdict[param]), paramlist)
 
 
+def constructaxiomshelper(axiomlist, paramdict, combinedaxioms, paramset, negstr):
+    for name, paramlist in axiomlist:
+        for paramid in paramlist:
+            if paramid not in paramset:
+                paramtype = paramdict[paramid]
+                combinedaxioms.append("{0}({1})".format(paramtype, convertparamname(paramid, paramtype)))
+                paramset.add(paramid)
+        combinedaxioms.append("{0}{1}({2})".format(negstr, name, ", ".join(renamelist(paramlist, paramdict) + ['S'])))
+
+
 def constructaxioms(axioms, paramdict):
-    convertedaxioms = Dual()
-    convertedaxioms.pos = map(lambda (name, paramlist): "{0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.pos)
-    convertedaxioms.neg = map(lambda (name, paramlist): "not {0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.neg)
-    combinedaxioms = convertedaxioms.pos + convertedaxioms.neg
-    for axiom in combinedaxioms:
-        print axiom
+    #convertedaxioms = Dual()
+
+    combinedaxioms = []
+    paramset = set()
+
+    constructaxiomshelper(axioms.pos, paramdict, combinedaxioms, paramset, '')
+    constructaxiomshelper(axioms.neg, paramdict, combinedaxioms, paramset, 'not ')
+
+    #convertedaxioms.pos = map(lambda (name, paramlist): "{0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.pos)
+    #convertedaxioms.neg = map(lambda (name, paramlist): "not {0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.neg)
+    #combinedaxioms = convertedaxioms.pos + convertedaxioms.neg
+    #for axiom in combinedaxioms:
+    #    pass
+    #    #print axiom
     return ", ".join(combinedaxioms)
 
 
 def constructpreconditions(action):
     prec = ""
+
+    #paramset = set()
+    masterlist = action.preclist.pos + action.preclist.neg
+
     if action.preclist.pos or action.preclist.neg:
         prec += "poss(" + action.actionname + constructparameters(action.paramlist, 'S') + ") :- " \
                 + constructaxioms(action.preclist, action.paramdict) + ".\n"
@@ -337,7 +359,7 @@ def createprologfrompddl(inpath, outpath):
 
 #path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
 #path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Logistics/Track1/Typed/domain.pddl"
-path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/domain-28.pddl"
+path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/noDistinct/domain-28.pddl"
 
 out = "/Users/aldendino/Desktop/out.pl"
 
