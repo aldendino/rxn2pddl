@@ -126,7 +126,7 @@ def parseaction(action, ignorelist):
     efflist = parselist(effect)
 
     parsedaction = Action()
-    parsedaction.actionname = actionname
+    parsedaction.actionname = actionname.replace('-', '_')
     parsedaction.paramlist = paramlist #list for ordering
     parsedaction.paramdict = paramdict #dict for quick lookup
     parsedaction.preclist = preclist #Dual
@@ -227,7 +227,11 @@ def convertparamname(paramid, paramtype):
 
 def constructparameters(parameters, situation):
     convertparams = map(lambda (paramid, paramtype): convertparamname(paramid, paramtype), parameters)
-    return "(" + ", ".join(convertparams + [situation]) + ")"
+    if situation:
+        sit = [situation]
+    else:
+        sit = []
+    return "(" + ", ".join(convertparams + sit) + ")"
 
 
 def renamelist(paramlist, paramdict):
@@ -236,12 +240,17 @@ def renamelist(paramlist, paramdict):
 
 def constructaxiomshelper(axiomlist, paramdict, combinedaxioms, paramset, negstr):
     for name, paramlist in axiomlist:
+        #
         for paramid in paramlist:
             if paramid not in paramset:
                 paramtype = paramdict[paramid]
                 combinedaxioms.append("{0}({1})".format(paramtype, convertparamname(paramid, paramtype)))
                 paramset.add(paramid)
-        combinedaxioms.append("{0}{1}({2})".format(negstr, name, ", ".join(renamelist(paramlist, paramdict) + ['S'])))
+        # Special format case for equality.
+        if name == '=':
+            combinedaxioms.append("{0}{1} {2} {3}".format(negstr, convertparamname(paramlist[0], paramdict[paramlist[0]]), name, convertparamname(paramlist[1], paramdict[paramlist[1]])))
+        else:
+            combinedaxioms.append("{0}{1}({2})".format(negstr, name, ", ".join(renamelist(paramlist, paramdict) + ['S'])))
 
 
 def constructaxioms(axioms, paramdict):
@@ -256,20 +265,14 @@ def constructaxioms(axioms, paramdict):
     #convertedaxioms.pos = map(lambda (name, paramlist): "{0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.pos)
     #convertedaxioms.neg = map(lambda (name, paramlist): "not {0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.neg)
     #combinedaxioms = convertedaxioms.pos + convertedaxioms.neg
-    #for axiom in combinedaxioms:
-    #    pass
-    #    #print axiom
     return ", ".join(combinedaxioms)
 
 
 def constructpreconditions(action):
     prec = ""
 
-    #paramset = set()
-    masterlist = action.preclist.pos + action.preclist.neg
-
     if action.preclist.pos or action.preclist.neg:
-        prec += "poss(" + action.actionname + constructparameters(action.paramlist, 'S') + ") :- " \
+        prec += "poss(" + action.actionname + constructparameters(action.paramlist, None) + ", S) :- " \
                 + constructaxioms(action.preclist, action.paramdict) + ".\n"
     return prec
 
@@ -279,9 +282,15 @@ def constructposeffects(action):
     poseffaxioms = action.efflist.pos
     poseffstr = ""
     for poseff in poseffaxioms:
+        axiomslist = []
+        paramtypeslist = []
+        for param in action.paramlist:
+            paramid = param[0]
+            paramtype = action.paramdict[paramid]
+            paramtypeslist.append("{0}({1})".format(paramtype, convertparamname(paramid, paramtype)))
         poseffparams = map(lambda paramid: (paramid, action.paramdict[paramid]), poseff[1])
-        poseffstr += poseff[0] + constructparameters(poseffparams, '[A|S]') + " :- A = " \
-               + action.actionname + constructparameters(action.paramlist, 'S') + ".\n"
+        axiomlist = paramtypeslist + ["A = " + action.actionname + constructparameters(action.paramlist, None)]
+        poseffstr += poseff[0] + constructparameters(poseffparams, '[A|S]') + " :- " + ", ".join(axiomlist) + ".\n"
     return poseffstr
 
 
@@ -328,7 +337,7 @@ def constructprolog(parseddomain):
     for negeffkey in negeffdict:
         negefflist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], '[A|S]') + " :- " \
               + ", ".join(map(lambda action: "not A = " + action.actionname
-                                             + constructparameters(action.paramlist, 'S'),
+                                             + constructparameters(action.paramlist, None),
                               negeffdict[negeffkey][1])) + ", " \
               + negeffkey + constructparameters(negeffdict[negeffkey][0], 'S') + ".\n")
 
@@ -357,11 +366,12 @@ def createprologfrompddl(inpath, outpath):
         outfile.write(prolog)
 
 
-#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
+path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
 #path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Logistics/Track1/Typed/domain.pddl"
 path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/noDistinct/domain-28.pddl"
 
-out = "/Users/aldendino/Desktop/out.pl"
+out = "/Users/aldendino/Desktop/domain_28.pl"
+#out = "/Users/aldendino/Desktop/blocks.pl"
 
 
 #parser = argparse.ArgumentParser(description='Convert pddl domain into prolog domain.')
