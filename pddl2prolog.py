@@ -238,33 +238,95 @@ def renamelist(paramlist, paramdict):
     return map(lambda param: convertparamname(param, paramdict[param]), paramlist)
 
 
-def constructaxiomshelper(axiomlist, paramdict, combinedaxioms, paramset, negstr):
-    for name, paramlist in axiomlist:
-        #
+#def constructaxiomshelper(axiomlist, paramdict, combinedaxioms, paramset, negstr):
+#    for name, paramlist in axiomlist:
+#        for paramid in paramlist:
+#            if paramid not in paramset:
+#                paramtype = paramdict[paramid]
+#                combinedaxioms.append("{0}({1})".format(paramtype, convertparamname(paramid, paramtype)))
+#                paramset.add(paramid)
+#        # Special format case for equality.
+#        if name == '=':
+#            combinedaxioms.append("{0}{1} {2} {3}".format(negstr, convertparamname(paramlist[0], paramdict[paramlist[0]]), name, convertparamname(paramlist[1], paramdict[paramlist[1]])))
+#        else:
+#            combinedaxioms.append("{0}{1}({2})".format(negstr, name, ", ".join(renamelist(paramlist, paramdict) + ['S'])))
+#
+#
+#def constructaxioms(axioms, paramdict):
+#    #convertedaxioms = Dual()
+#    constaxioms(axioms, paramdict)
+#
+#    combinedaxioms = []
+#    paramset = set()
+#
+#    constructaxiomshelper(axioms.pos, paramdict, combinedaxioms, paramset, '')
+#    constructaxiomshelper(axioms.neg, paramdict, combinedaxioms, paramset, 'not ')
+#
+#    #convertedaxioms.pos = map(lambda (name, paramlist): "{0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.pos)
+#    #convertedaxioms.neg = map(lambda (name, paramlist): "not {0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.neg)
+#    #combinedaxioms = convertedaxioms.pos + convertedaxioms.neg
+#    return ", ".join(combinedaxioms)
+
+
+"""
+    Split a list into two, based on whether a condition is met or not
+"""
+def splitlist(totallist, cond):
+    condtrue, condfalse = [], []
+    map(lambda value: (condtrue, condfalse)[not cond(value)].append(value), totallist)
+    return condtrue, condfalse
+
+
+def constructequalities(eqlists, param, paramset, paramdict):
+    templist = []
+    formatting = lambda valstr, (x, y): "{0}{1} {2} {3}".format(valstr, convertparamname(x, paramdict[x]), "=", convertparamname(y, paramdict[y]))
+    posstr = ""
+    negstr = "not "
+    # check all possible arrangements in both the equalities and inequalities
+    for paramother in paramset:
+        if (param, paramother) in eqlists.pos:
+            templist.append(formatting(posstr, (param, paramother)))
+        if (param, paramother) in eqlists.neg:
+            templist.append(formatting(negstr, (param, paramother)))
+        if (paramother, param) in eqlists.pos:
+            templist.append(formatting(posstr, (paramother, param)))
+        if (paramother, param) in eqlists.neg:
+            templist.append(formatting(negstr, (paramother, param)))
+    return templist
+
+
+def constructaxiomshelper(axioms, paramdict, paramset, combinedaxioms, eqlists, valstr):
+    for name, paramlist in axioms:
         for paramid in paramlist:
             if paramid not in paramset:
                 paramtype = paramdict[paramid]
                 combinedaxioms.append("{0}({1})".format(paramtype, convertparamname(paramid, paramtype)))
                 paramset.add(paramid)
-        # Special format case for equality.
-        if name == '=':
-            combinedaxioms.append("{0}{1} {2} {3}".format(negstr, convertparamname(paramlist[0], paramdict[paramlist[0]]), name, convertparamname(paramlist[1], paramdict[paramlist[1]])))
-        else:
-            combinedaxioms.append("{0}{1}({2})".format(negstr, name, ", ".join(renamelist(paramlist, paramdict) + ['S'])))
+                # check if need to add any equalities or inequalities based on the newly added paramid
+                combinedaxioms.extend(constructequalities(eqlists, paramid, paramset, paramdict))
+        combinedaxioms.append("{0}{1}({2})".format(valstr, name, ", ".join(renamelist(paramlist, paramdict) + ['S'])))
 
 
 def constructaxioms(axioms, paramdict):
-    #convertedaxioms = Dual()
+    func = Dual()
+    eq = Dual()
+    eqcond = lambda x: x[0] == '='
+    eq.pos, func.pos = splitlist(axioms.pos, eqcond)
+    eq.neg, func.neg = splitlist(axioms.neg, eqcond)
+
+    eqlists = Dual()
+    eqtotup = lambda (name, paramlist): (paramlist[0], paramlist[1])
+    eqlists.pos = map(eqtotup, eq.pos)
+    eqlists.neg = map(eqtotup, eq.neg)
 
     combinedaxioms = []
     paramset = set()
 
-    constructaxiomshelper(axioms.pos, paramdict, combinedaxioms, paramset, '')
-    constructaxiomshelper(axioms.neg, paramdict, combinedaxioms, paramset, 'not ')
+    posstr = ""
+    negstr = "not "
+    constructaxiomshelper(func.pos, paramdict, paramset, combinedaxioms, eqlists, posstr)
+    constructaxiomshelper(func.neg, paramdict, paramset, combinedaxioms, eqlists, negstr)
 
-    #convertedaxioms.pos = map(lambda (name, paramlist): "{0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.pos)
-    #convertedaxioms.neg = map(lambda (name, paramlist): "not {0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.neg)
-    #combinedaxioms = convertedaxioms.pos + convertedaxioms.neg
     return ", ".join(combinedaxioms)
 
 
