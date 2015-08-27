@@ -217,13 +217,21 @@ def determinediscontiguous(action):
 
 
 def constructdynamic(typeslist):
+    dynamiclist = []
     typesset = set()
     for (name, namelist) in typeslist:
-        typesset.add(name)
+        levellist = []
+        if name not in typesset:
+            levellist.append(name)
+            typesset.add(name)
         for item in namelist:
-            typesset.add(item)
-    typessetsorted = sorted(typesset)
-    return map(lambda name: ":- dynamic {0}/1.".format(name), typessetsorted)
+            if item not in typesset:
+                levellist.append(item)
+                typesset.add(item)
+        dynamiclist.append(":- dynamic {0}.".format(", ".join(map(lambda name: name + "/1", levellist))))
+    #typessetsorted = sorted(typesset)
+    #return map(lambda name: ":- dynamic {0}/1.".format(name), typessetsorted)
+    return dynamiclist
 
 
 def constructtypes(typeslist):
@@ -367,17 +375,11 @@ def constructposeffects(action):
 
 
 def buildnegeffdict(action):
-    print action.actionname
     negeffdict = {}
     negeffaxioms = action.efflist.neg
     for negeff in negeffaxioms:
-        print negeff
         if negeff[0] in negeffdict:
-            print "before"
-            print negeffdict[negeff[0]][1]
             negeffdict[negeff[0]][1].append(action)
-            print "after"
-            print negeffdict[negeff[0]][1]
         else:
             renamednegeff = map(lambda paramid: (paramid, action.paramdict[paramid]), negeff[1])
             negeffdict[negeff[0]] = (renamednegeff, [action])
@@ -426,13 +428,26 @@ def constructprolog(parseddomain):
     # but not the fluent parameters...
     # And, the parameters are not guaranteed to match.
 
-    for negeffkey in negeffdict:
-        negefflist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], '[A|S]') + " :- " \
-              + ", ".join(map(lambda action: "not A = " + action.actionname
-                                             + constructparameters(action.paramlist, None),
-                              negeffdict[negeffkey][1])) + ", " \
-              + negeffkey + constructparameters(negeffdict[negeffkey][0], 'S') + ".\n")
+    #for negeffkey in negeffdict:
+    #    negefflist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], '[A|S]') + " :- " \
+    #          + ", ".join(map(lambda action: "not A = " + action.actionname
+    #                                         + constructparameters(action.paramlist, None),
+    #                          negeffdict[negeffkey][1])) + ", " \
+    #          + negeffkey + constructparameters(negeffdict[negeffkey][0], 'S') + ".\n")
 
+    for negeffkey in negeffdict:
+        paramset = set()
+        axiomlist = []
+        for action in negeffdict[negeffkey][1]:
+            for paramid, paramtype in action.paramlist:
+                if paramid not in paramset:
+                    axiomlist.append("{0}({1})".format(paramtype, convertparamname(paramid, paramtype)))
+                    paramset.add(paramid)
+            axiomlist.append("not A = " + action.actionname + constructparameters(action.paramlist, None))
+        axiomlist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], 'S'))
+        negefflist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], '[A|S]') + " :- " + ", ".join(axiomlist) + ".")
+
+    # Put it all together
     precstr = "\n".join(preclist)
     poseffstr = "\n".join(posefflist)
     negeffstr = "\n".join(negefflist)
@@ -458,12 +473,12 @@ def createprologfrompddl(inpath, outpath):
         outfile.write(prolog)
 
 
-#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
+path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
 #path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Logistics/Track1/Typed/domain.pddl"
-path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/noDistinct/domain-28.pddl"
+#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/noDistinct/domain-28.pddl"
 
-out = "/Users/aldendino/Desktop/domain_28.pl"
-#out = "/Users/aldendino/Desktop/blocks.pl"
+#out = "/Users/aldendino/Desktop/domain_28.pl"
+out = "/Users/aldendino/Desktop/blocks.pl"
 
 
 #parser = argparse.ArgumentParser(description='Convert pddl domain into prolog domain.')
