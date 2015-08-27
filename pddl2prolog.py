@@ -353,7 +353,7 @@ def constructpreconditions(action):
 
     if action.preclist.pos or action.preclist.neg:
         prec += "poss(" + action.actionname + constructparameters(action.paramlist, None) + ", S) :- " \
-                + constructaxioms(action.preclist, action.paramdict) + ".\n"
+                + constructaxioms(action.preclist, action.paramdict) + "."
     return prec
 
 
@@ -370,7 +370,7 @@ def constructposeffects(action):
             paramtypeslist.append("{0}({1})".format(paramtype, convertparamname(paramid, paramtype)))
         poseffparams = map(lambda paramid: (paramid, action.paramdict[paramid]), poseff[1])
         axiomlist = paramtypeslist + ["A = " + action.actionname + constructparameters(action.paramlist, None)]
-        poseffstr += poseff[0] + constructparameters(poseffparams, '[A|S]') + " :- " + ", ".join(axiomlist) + ".\n"
+        poseffstr += poseff[0] + constructparameters(poseffparams, '[A|S]') + " :- " + ", ".join(axiomlist) + "."
     return poseffstr
 
 
@@ -448,12 +448,16 @@ def constructprolog(parseddomain):
         negefflist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], '[A|S]') + " :- " + ", ".join(axiomlist) + ".")
 
     # Put it all together
-    precstr = "\n".join(preclist)
-    poseffstr = "\n".join(posefflist)
-    negeffstr = "\n".join(negefflist)
-    effstr = poseffstr + "\n" + negeffstr
+    precstr = "\n\n".join(preclist)
+    poseffstr = "\n\n".join(posefflist)
+    negeffstr = "\n\n".join(negefflist)
 
-    return "\n\n".join([discstr, dynamicstr, typesstr, precstr, effstr])
+    preccomm = "% Preconditions"
+    poseffcomm = "% Positive Effects"
+    negeffcomm = "% Negative Effects"
+
+    return "\n\n\n".join(filter(lambda string: string, [discstr, dynamicstr, typesstr, preccomm, precstr,
+                                                        poseffcomm, poseffstr, negeffcomm, negeffstr]))
 
 
 """
