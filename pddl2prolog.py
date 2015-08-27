@@ -216,6 +216,16 @@ def determinediscontiguous(action):
     return disc
 
 
+def constructdynamic(typeslist):
+    typesset = set()
+    for (name, namelist) in typeslist:
+        typesset.add(name)
+        for item in namelist:
+            typesset.add(item)
+    typessetsorted = sorted(typesset)
+    return map(lambda name: ":- dynamic {0}/1.".format(name), typessetsorted)
+
+
 def constructtypes(typeslist):
     # Note, this will ignore types which have an empty list, i.e. ('type', [])
     return map(lambda (name, namelist): "\n".join(map(lambda item: "{0}(X) :- {1}(X).".format(name, item), namelist)), typeslist)
@@ -357,15 +367,29 @@ def constructposeffects(action):
 
 
 def buildnegeffdict(action):
+    print action.actionname
     negeffdict = {}
     negeffaxioms = action.efflist.neg
     for negeff in negeffaxioms:
+        print negeff
         if negeff[0] in negeffdict:
+            print "before"
+            print negeffdict[negeff[0]][1]
             negeffdict[negeff[0]][1].append(action)
+            print "after"
+            print negeffdict[negeff[0]][1]
         else:
             renamednegeff = map(lambda paramid: (paramid, action.paramdict[paramid]), negeff[1])
             negeffdict[negeff[0]] = (renamednegeff, [action])
     return negeffdict
+
+
+def syncnegeffdicts(resultdict, syncdict):
+    for key in syncdict.keys():
+        if key in resultdict:
+            resultdict[key][1].extend(syncdict[key][1])
+        else:
+            resultdict[key] = syncdict[key]
 
 
 def constructprolog(parseddomain):
@@ -375,7 +399,11 @@ def constructprolog(parseddomain):
 
     negeffdict = {}
 
-    typesstr = "\n".join(constructtypes(parseddomain.types))
+    typeslist = parseddomain.types
+
+    dynamicstr = "\n".join(constructdynamic(typeslist))
+
+    typesstr = "\n".join(constructtypes(typeslist))
 
     discontiguous = set()
 
@@ -388,7 +416,9 @@ def constructprolog(parseddomain):
 
         # negative effect collector... how should different parameter names be handled?
         # implement a set to keep discontiguous information
-        negeffdict.update(buildnegeffdict(action))
+
+        #negeffdict.update(buildnegeffdict(action))
+        syncnegeffdicts(negeffdict, buildnegeffdict(action))
 
     discstr = "\n".join(map(lambda (name, length): ":- dynamic " + name + "/" + str(length) + ".", sorted(discontiguous)))
 
@@ -408,7 +438,7 @@ def constructprolog(parseddomain):
     negeffstr = "\n".join(negefflist)
     effstr = poseffstr + "\n" + negeffstr
 
-    return "\n\n".join([discstr, typesstr, precstr, effstr])
+    return "\n\n".join([discstr, dynamicstr, typesstr, precstr, effstr])
 
 
 """
@@ -428,7 +458,7 @@ def createprologfrompddl(inpath, outpath):
         outfile.write(prolog)
 
 
-path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
+#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
 #path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Logistics/Track1/Typed/domain.pddl"
 path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/noDistinct/domain-28.pddl"
 
