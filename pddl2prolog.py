@@ -256,36 +256,6 @@ def renamelist(paramlist, paramdict):
     return map(lambda param: convertparamname(param, paramdict[param]), paramlist)
 
 
-#def constructaxiomshelper(axiomlist, paramdict, combinedaxioms, paramset, negstr):
-#    for name, paramlist in axiomlist:
-#        for paramid in paramlist:
-#            if paramid not in paramset:
-#                paramtype = paramdict[paramid]
-#                combinedaxioms.append("{0}({1})".format(paramtype, convertparamname(paramid, paramtype)))
-#                paramset.add(paramid)
-#        # Special format case for equality.
-#        if name == '=':
-#            combinedaxioms.append("{0}{1} {2} {3}".format(negstr, convertparamname(paramlist[0], paramdict[paramlist[0]]), name, convertparamname(paramlist[1], paramdict[paramlist[1]])))
-#        else:
-#            combinedaxioms.append("{0}{1}({2})".format(negstr, name, ", ".join(renamelist(paramlist, paramdict) + ['S'])))
-#
-#
-#def constructaxioms(axioms, paramdict):
-#    #convertedaxioms = Dual()
-#    constaxioms(axioms, paramdict)
-#
-#    combinedaxioms = []
-#    paramset = set()
-#
-#    constructaxiomshelper(axioms.pos, paramdict, combinedaxioms, paramset, '')
-#    constructaxiomshelper(axioms.neg, paramdict, combinedaxioms, paramset, 'not ')
-#
-#    #convertedaxioms.pos = map(lambda (name, paramlist): "{0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.pos)
-#    #convertedaxioms.neg = map(lambda (name, paramlist): "not {0}({1})".format(name, ", ".join(renamelist(paramlist, paramdict) + ['S'])), axioms.neg)
-#    #combinedaxioms = convertedaxioms.pos + convertedaxioms.neg
-#    return ", ".join(combinedaxioms)
-
-
 """
     Split a list into two, based on whether a condition is met or not
 """
@@ -416,24 +386,10 @@ def constructprolog(parseddomain):
 
         posefflist.append(constructposeffects(action))
 
-        # negative effect collector... how should different parameter names be handled?
-        # implement a set to keep discontiguous information
-
-        #negeffdict.update(buildnegeffdict(action))
         syncnegeffdicts(negeffdict, buildnegeffdict(action))
 
     discstr = "\n".join(map(lambda (name, length): ":- dynamic " + name + "/" + str(length) + ".", sorted(discontiguous)))
 
-    # This doesn't account for parameters that exists in the action parameters,
-    # but not the fluent parameters...
-    # And, the parameters are not guaranteed to match.
-
-    #for negeffkey in negeffdict:
-    #    negefflist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], '[A|S]') + " :- " \
-    #          + ", ".join(map(lambda action: "not A = " + action.actionname
-    #                                         + constructparameters(action.paramlist, None),
-    #                          negeffdict[negeffkey][1])) + ", " \
-    #          + negeffkey + constructparameters(negeffdict[negeffkey][0], 'S') + ".\n")
 
     for negeffkey in negeffdict:
         paramset = set()
@@ -470,10 +426,20 @@ def createprologfrompddl(inpath, outpath):
     outpath = os.path.expanduser(outpath)
     if not os.path.isfile(inpath):
         raise IOError("Cannot open file " + inpath)
+    if not os.path.isdir(outpath):
+        raise IOError("Cannot open folder " + outpath)
+
+    infilename = os.path.basename(inpath)
+    print infilename
+    outfilename = infilename.split('.')[0] + '.pl'
+    print outfilename
+    outfilepath = os.path.join(outpath, outfilename)
+    print outfilepath
+
     with open(inpath, 'r') as infile:
         pddl = infile.read()
         prolog = constructprolog(parsepddldomain(pddl))
-    with open(outpath, 'w') as outfile:
+    with open(outfilepath, 'w') as outfile:
         outfile.write(prolog)
 
 parser = argparse.ArgumentParser(description='Convert pddl domain into prolog domain.')
