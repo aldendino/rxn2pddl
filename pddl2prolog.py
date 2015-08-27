@@ -477,12 +477,12 @@ def createprologfrompddl(inpath, outpath):
         outfile.write(prolog)
 
 
-path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
+#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
 #path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Logistics/Track1/Typed/domain.pddl"
-#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/noDistinct/domain-28.pddl"
+path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/noDistinct/domain-28.pddl"
 
-#out = "/Users/aldendino/Desktop/domain_28.pl"
-out = "/Users/aldendino/Desktop/blocks.pl"
+out = "/Users/aldendino/Desktop/domain_28.pl"
+#out = "/Users/aldendino/Desktop/blocks.pl"
 
 
 #parser = argparse.ArgumentParser(description='Convert pddl domain into prolog domain.')
