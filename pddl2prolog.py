@@ -476,21 +476,9 @@ def createprologfrompddl(inpath, outpath):
     with open(outpath, 'w') as outfile:
         outfile.write(prolog)
 
+parser = argparse.ArgumentParser(description='Convert pddl domain into prolog domain.')
+parser.add_argument('inpath', type=str, help='The input path to a pddl domain file.')
+parser.add_argument('outpath', type=str, help='The output path to a prolog domain file.')
+args = parser.parse_args()
 
-#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Blocks/Track1/Typed/domain.pddl"
-#path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/Res/AIPS-2000DataFiles/2000-Tests/Logistics/Track1/Typed/domain.pddl"
-path = "/Users/aldendino/Documents/School/SitCalc/Alden/Documents/workspace/d28/original/noDistinct/domain-28.pddl"
-
-out = "/Users/aldendino/Desktop/domain_28.pl"
-#out = "/Users/aldendino/Desktop/blocks.pl"
-
-
-#parser = argparse.ArgumentParser(description='Convert pddl domain into prolog domain.')
-#parser.add_argument('inpath', type=str, help='The input path to a pddl domain file.')
-#parser.add_argument('outpath', type=str, help='The output path to a prolog domain file.')
-#args = parser.parse_args()
-
-#createprologfrompddl(args.inpath, args.outpath)
-
-createprologfrompddl(path, out)
-
+createprologfrompddl(args.inpath, args.outpath)
