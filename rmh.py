@@ -1,5 +1,10 @@
 import re
 import os.path
 
-def rmhfrom():
+
+def rmhfromproblem(pddl):
+    pass
+
+
+def rmhfromdomain(pddl):
     pass

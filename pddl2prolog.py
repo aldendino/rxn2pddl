@@ -2,6 +2,7 @@ import dist
 import re
 import os
 import argparse
+import sexpdata
 
 
 """
@@ -126,7 +127,7 @@ def parseaction(action, ignorelist):
     efflist = parselist(effect)
 
     parsedaction = Action()
-    parsedaction.actionname = actionname.replace('-', '_')
+    parsedaction.actionname = actionname.replace('-', '_').lower()
     parsedaction.paramlist = paramlist #list for ordering
     parsedaction.paramdict = paramdict #dict for quick lookup
     parsedaction.preclist = preclist #Dual
@@ -160,7 +161,24 @@ def parsetypes(typestr):
     return typeslist
 
 
+def stripsexp(sexp):
+    if isinstance(sexp, sexpdata.Symbol):
+        return sexp._val
+    elif isinstance(sexp, list):
+        return map(stripsexp, sexp)
+    else:
+        return sexp
+
+
 def parsepddldomain(pddl):
+
+    # cleaner parsing of s-expressions,
+    # yet to be implemented for usage
+    data = sexpdata.loads(pddl)
+    stripeddata = stripsexp(data)
+
+
+
     ignorelist = [' ', '\n', '\t']
 
     (_, content, _) = dist.extractsection(pddl, '(', ')')
@@ -330,6 +348,7 @@ def constructpreconditions(action):
 def constructposeffects(action):
     # implement a set to keep discontiguous information
     poseffaxioms = action.efflist.pos
+    posefflist = []
     poseffstr = ""
     for poseff in poseffaxioms:
         axiomslist = []
@@ -340,31 +359,37 @@ def constructposeffects(action):
             paramtypeslist.append("{0}({1})".format(paramtype, convertparamname(paramid, paramtype)))
         poseffparams = map(lambda paramid: (paramid, action.paramdict[paramid]), poseff[1])
         axiomlist = paramtypeslist + ["A = " + action.actionname + constructparameters(action.paramlist, None)]
-        poseffstr += poseff[0] + constructparameters(poseffparams, '[A|S]') + " :- " + ", ".join(axiomlist) + "."
-    return poseffstr
+        posefflist.append(poseff[0] + constructparameters(poseffparams, '[A|S]') + " :- " + ", ".join(axiomlist) + ".")
+    return "\n".join(posefflist)
 
 
 def buildnegeffdict(action):
     negeffdict = {}
     negeffaxioms = action.efflist.neg
     for negeff in negeffaxioms:
+        renamednegeff = map(lambda paramid: (paramid, action.paramdict[paramid]), negeff[1])
         if negeff[0] in negeffdict:
-            negeffdict[negeff[0]][1].append(action)
+            negeffdict[negeff[0]].append((renamednegeff, action))
         else:
-            renamednegeff = map(lambda paramid: (paramid, action.paramdict[paramid]), negeff[1])
-            negeffdict[negeff[0]] = (renamednegeff, [action])
+            negeffdict[negeff[0]] = [(renamednegeff, action)]
     return negeffdict
 
 
 def syncnegeffdicts(resultdict, syncdict):
     for key in syncdict.keys():
         if key in resultdict:
-            resultdict[key][1].extend(syncdict[key][1])
+            resultdict[key].extend(syncdict[key])
         else:
             resultdict[key] = syncdict[key]
 
 
 def constructprolog(parseddomain):
+
+    # Something to consider, should compare by converted varable names, not original, when putting items in sets.
+    # Otherwise, non-conventional naming could cause conflicts, which may result in missing type checks.
+    # Consider x - A, and x - B, when put in a set, only x remains, and then is renamed to either X_A or X_B,
+    # depending on the dictionary entry for the type, and either a(X_A) or b(X_B) could be missing.
+
     preclist = []
     posefflist = []
     negefflist = []
@@ -394,14 +419,25 @@ def constructprolog(parseddomain):
     for negeffkey in negeffdict:
         paramset = set()
         axiomlist = []
-        for action in negeffdict[negeffkey][1]:
+
+        # find arity based on first element of the list.
+        negeffarity = len(negeffdict[negeffkey][0][0])
+        # generate generic variables for the input, the number of which depends on the arity of the fluent.
+        genparam = map(lambda count: "".join(['X', str(count)]), range(1, negeffarity + 1))
+
+        for (actionparams, action) in negeffdict[negeffkey]:
             for paramid, paramtype in action.paramlist:
                 if paramid not in paramset:
                     axiomlist.append("{0}({1})".format(paramtype, convertparamname(paramid, paramtype)))
                     paramset.add(paramid)
-            axiomlist.append("not A = " + action.actionname + constructparameters(action.paramlist, None))
-        axiomlist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], 'S'))
-        negefflist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], '[A|S]') + " :- " + ", ".join(axiomlist) + ".")
+            actionlist = ["A = " + action.actionname + constructparameters(action.paramlist, None)]
+            zippedeq = zip(genparam, map(lambda (itemid, itemtype): convertparamname(itemid, itemtype), action.paramlist))
+            actionlist.extend(map(lambda (genparam, actparam): "{0} = {1}".format(genparam, actparam), zippedeq))
+            axiomlist.append("not ({0})".format(", ".join(actionlist)))
+        axiomlist.append(negeffkey + "({0})".format(", ".join(genparam + ['S'])))
+        negefflist.append(negeffkey + "({0})".format(", ".join(genparam + ['[A|S]'])) + " :- " + ", ".join(axiomlist) + ".")
+        #axiomlist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], 'S'))
+        #negefflist.append(negeffkey + constructparameters(negeffdict[negeffkey][0], '[A|S]') + " :- " + ", ".join(axiomlist) + ".")
 
     # Put it all together
     precstr = "\n\n".join(preclist)
@@ -430,17 +466,16 @@ def createprologfrompddl(inpath, outpath):
         raise IOError("Cannot open folder " + outpath)
 
     infilename = os.path.basename(inpath)
-    print infilename
     outfilename = infilename.split('.')[0] + '.pl'
-    print outfilename
     outfilepath = os.path.join(outpath, outfilename)
-    print outfilepath
 
     with open(inpath, 'r') as infile:
         pddl = infile.read()
         prolog = constructprolog(parsepddldomain(pddl))
     with open(outfilepath, 'w') as outfile:
         outfile.write(prolog)
+
+    print "Prolog written to " + outfilepath
 
 parser = argparse.ArgumentParser(description='Convert pddl domain into prolog domain.')
 parser.add_argument('inpath', type=str, help='The input path to a pddl domain file.')
