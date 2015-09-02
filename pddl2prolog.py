@@ -108,7 +108,7 @@ def parseaction(action, ignorelist):
     paramlist = []
     paramdict = {}
     while splitlist:
-        paramid = splitlist.pop(0)[1:]
+        paramid = splitlist.pop(0)[1:] # Get rid of preceding question mark
         dash = splitlist.pop(0)
         paramtype = splitlist.pop(0)
         paramlist.append((paramid, paramtype))
