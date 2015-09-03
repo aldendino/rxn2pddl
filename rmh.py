@@ -11,6 +11,15 @@ class Problem:
         self.goal = []
 
 
+class Domain:
+    def __init__(self):
+        self.name = ""
+        self.requirements = []
+        self.types = {}
+        self.predicates = []
+        self.actions = []
+
+
 def stripsexp(sexp):
     if isinstance(sexp, sexpdata.Symbol):
         return sexp._val
@@ -26,7 +35,7 @@ def importpddl(pddl):
     return stripeddata
 
 
-def checkpddl(pddl):
+def checkproblem(pddl):
     if pddl[0] != "define":
         raise IOError("Missing definition.")
     if pddl[1][0] != "problem":
@@ -43,18 +52,19 @@ def checkpddl(pddl):
 
 def parseobjects(objects):
     objectdict = {}
-    templist = []
     typeflag = False
+    tempitem = ""
     for item in objects:
         if typeflag:
-            objectdict[item] = templist
-            templist = []
-            typeflag = False
-        else:
-            if item == "-":
-                typeflag = True
+            if item in objectdict:
+                objectdict[item].append(tempitem)
             else:
-                templist.append(item)
+                objectdict[item] = [tempitem]
+            typeflag = False
+        elif item == "-":
+            typeflag = True
+        else:
+            tempitem = item
     return objectdict
 
 
@@ -67,7 +77,7 @@ def parsegoal(goal):
 
 
 def parseproblem(pddl):
-    checkpddl(pddl)
+    checkproblem(pddl)
 
     problem = Problem()
     problem.name = pddl[1][1]
@@ -103,7 +113,7 @@ def filterhset(hset, *fluentlists):
     for fluentlist in fluentlists:
         for fluent in fluentlist:
             for parameter in fluent[1]:
-                print parameter
+                #print parameter
                 if parameter in hset:
                     hset.remove(parameter)
 
@@ -123,11 +133,45 @@ def rmhfromproblem(pddl):
     filterbonds(problem, problem.goal, goallist, hset)
 
     filterhset(hset, initlist, goallist)
+    print hset
 
+    # hset is empty once filtered, so how can we remove any items?
+
+    rmh.objects = problem.objects # should filter out hydrogen objects first
+    rmh.init = initlist
+    rmh.goal = goallist
+
+    return rmh
+
+
+def constructfluentstrings(fluentlist):
+    return map(lambda (name, params): "{0}({1})".format(name, ", ".join(params)), fluentlist)
+
+
+def constructobjectstrings(objectdict):
+    return map(lambda key: "\n\t".join(map(lambda item: "{0} - {1}".format(item, key), objectdict[key])), objectdict)
+
+
+def constructproblem(problem):
+    #"(define\n\t(problem {0})\n\t(:domain {1}))".format(problem.name, problem.domain)
+
+    name = "\t(problem {0})".format(problem.name)
+    domain = "\t(:domain {0})".format(problem.domain)
+    objects = "(:objects\n\t{0})".format("\n\t".join(constructobjectstrings(problem.objects)))
+    init = "(:init\n\t{0})".format("\n\t".join(constructfluentstrings(problem.init)))
+    goal = "(:goal\n\t(and\n\t\t{0}))".format("\n\t\t".join(constructfluentstrings(problem.goal)))
+
+    body = "\n".join([name, domain, objects, init, goal])
+    final = "(define\n{0})".format(body)
+    return final
+
+
+def parsedomain(pddl):
+    pass
 
 
 def rmhfromdomain(pddl):
-    pass
+    domain = parsedomain(importpddl(pddl))
 
 
 parser = argparse.ArgumentParser(description='Remove unnecessary hydrogens from pddl problems.')
@@ -136,4 +180,4 @@ args = parser.parse_args()
 
 with open(args.problem, 'r') as file:
     pddl = file.read()
-    rmhfromproblem(pddl)
+    print constructproblem(rmhfromproblem(pddl))
