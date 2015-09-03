@@ -174,9 +174,9 @@ def get_bond_name_from_order(order):
 
     bondNames = {
         1 : "bond",
-        2 : "doubleBond",
-        3 : "tripleBond",
-        4 : "aromaticBond"
+        2 : "doublebond",
+        3 : "triplebond",
+        4 : "aromaticbond"
     }
 
     if order in bondNames.keys():
